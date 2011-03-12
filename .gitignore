@@ -1,0 +1,5 @@
+sessions
+*.pyc
+.*.swp
+*.pidaproject
+flocks.db
