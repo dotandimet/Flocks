@@ -158,7 +158,7 @@
           }
         ], 
         "type": "flock", 
-        "description": "News from feeds I recommend", 
+        "description": "Feeds I recommend", 
         "title": "Public"
       }
     ], 

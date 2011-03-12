@@ -174,9 +174,9 @@ def flock_get(flock,slugpath):
         return None
     return flock_get(found[0],slugpath[1:])
 
-def get_subflock(flock,name):
+def subflock(flock,name):
     "Flat get by name"
-    return flock_get(flock,[slugpath(name)])
+    return flock_get(flock,[flockslug(name)])
 
 def get_flock_feeds(flock,respect_mutes=False):
     "Get all urls of feeds (leafs) in a flock tree. If respect_mutes, ignores mute feeds"
@@ -242,8 +242,9 @@ def get_root_or_public_flock(db):
     else:
         root = import_flock_file(db,DEFAULT_FLOCK_FILENAME)
         jdb['flock'] = root
-    ###@@@ To Do: Get public flock if not logged in!!!!!
-    return root
+    if global_account.is_logged_in:
+        return root
+    return subflock(root,'public') or {'type':'flock','title':'No public flock','items':[]}
 
 ### our single account manager
 global_account = Sam(global_db,session)
