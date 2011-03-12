@@ -1,0 +1,11 @@
+$def with (args)
+$var title: Please login
+$var is_login_page: True
+$var description: ${account.auto_logged_out and 'Automatically logged out' or ''}
+<form action="" method=POST>
+  <input type=hidden name=csrf_token value=$csrf_token()>
+  $if args.has_key('error'):
+      <strong class=wrong>$args['error']</strong><br>
+  $:args['form'].render()
+  <input type="submit" value="Login">
+</form>

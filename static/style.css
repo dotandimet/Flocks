@@ -1,0 +1,242 @@
+body {
+    background: #CAECE9;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+}
+
+a {
+    color: #26776F;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #333;
+    text-decoration: underline;
+}
+
+a:focus, a:active { outline: 0 }
+
+.rtl { direction:rtl }
+
+.wrong { color:red }
+
+.important {
+    color:#FF0000 !important;
+    font-size:125%;
+    text-shadow: -2px -2px 4px #FFFFFF !important;
+}
+
+input[type="text"],
+input[type="password"] {
+    background: white;
+    border: 1px solid #BFE6E2;
+    padding: 2px;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+    -moz-border-radius: 2px;
+    -webkit-border-radius: 2px;
+    color: #105751;
+}
+
+input[type="submit"] {
+    background: #105751;
+    border: 1px solid #073B36;
+    padding: 1px 3px;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    -moz-border-radius: 2px;
+    -webkit-border-radius: 2px;
+    color: white;
+}
+
+form.login-menu { float:right }
+form.inline-form { display:inline }
+
+div.page {
+    background: white;
+    border: 1px solid #6ECCC4;
+    width: 700px;
+    margin: 30px auto;
+}
+
+div.page h1 {
+    background: #6ECCC4;
+    margin: 0;
+    padding: 10px 14px 4px;
+    color: white;
+    letter-spacing: 1px;
+    text-shadow: 0 0 3px #24776F;
+    font-weight: normal;
+}
+
+div.page-description {
+    background: #6ECCC4;
+    padding: 0 14px 8px;
+    font-weight: bold;
+    text-shadow: 0 0 2px #ffffff;
+}
+
+div.page div.navigation {
+    background: #DEE9E8;
+    padding: 4px 10px;
+    border-top: 1px solid #ccc;
+    border-bottom: 1px solid #eee;
+    color: #888;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    line-height: 24px;
+}
+
+div.page div.navigation a {
+    color: #444;
+    font-weight: bold;
+}
+
+div.page h2 {
+    margin: 0;
+    color: #105751;
+    text-shadow: 0 1px 2px #ccc;
+}
+
+div.page div.body {
+    padding: 10px;
+}
+
+div.page div.footer {
+    background: #eee;
+    color: #888;
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+div.page div.followstatus {
+    border: 1px solid #ccc;
+    background: #E3EBEA;
+    -moz-border-radius: 2px;
+    -webkit-border-radius: 2px;
+    padding: 3px;
+    font-size: 13px;
+}
+
+div.page ul.messages {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Makes friendfeed look nicer */
+div.page ul.messages th, div.page ul.messages td {
+    vertical-align:top;
+}
+
+div.page ul.messages li {
+    position:relative; /* enable input.toggler position:absolute trickery */
+    margin: 10px 0;
+    padding: 5px;
+    background: #F0FAF9;
+    border: 1px solid #DBF3F1;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+
+div.page ul.flock {
+    list-style: none;
+    margin: 0 16px;
+    padding: 0;
+}
+
+div.page ul.flock li {
+    position:relative; /* enable input.toggler position:absolute trickery */
+    margin: 0 0 0 20px;
+    padding: 5px;
+}
+
+.mute a { background:#DFDFDF; padding:1px 4px }
+a.mute, span.mute { background:#BFBFBF; padding:1px 4px }
+
+div.page .toggler-label {
+    background: #F0FAF9;
+    padding:5px 8px 5px 20px;
+    border: 1px solid #DBF3F1;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+
+/* expand/collapse toggler checkbox. Inspired by http://www.thecssninja.com/css/css-tree-menu */
+input.toggler {
+    position:absolute;
+    top:4px; left:4px;
+}
+
+span.toggler-label {
+    padding-left:20px
+}
+
+input.toggler + div {
+    height: 0;
+    overflow: hidden;
+}
+
+input.toggler:checked + div {
+    height: auto;
+    overflow: visible;
+}
+
+div.page ul.messages p {
+    margin: 0;
+}
+
+div.page ul.messages li img {
+    border: none;
+    padding: 0 10px 0 0;
+}
+
+div.page ul.messages li small, .item-time {
+    font-size: 0.9em;
+    color: #888;
+}
+
+div.item-time {
+    direction:ltr !important;
+    float:right;
+    margin-left:4px;
+}
+
+.site-reference, .feed-reference {
+    font-size: 0.9em;
+}
+
+a.site-reference, a.feed-reference {
+    text-decoration: underline;
+}
+
+.entry-title {
+    font-weight:bold
+}
+
+ul.flashes {
+    list-style: none;
+    margin: 10px 10px 0 10px;
+    padding: 0;
+}
+
+ul.flashes li {
+    background: #B9F3ED;
+    border: 1px solid #81CEC6;
+    -moz-border-radius: 2px;
+    -webkit-border-radius: 2px;
+    padding: 4px;
+    font-size: 13px;
+}
+
+div.error {
+    margin: 10px 0;
+    background: #FAE4E4;
+    border: 1px solid #DD6F6F;
+    -moz-border-radius: 2px;
+    -webkit-border-radius: 2px;
+    padding: 4px;
+    font-size: 13px;
+}
+
