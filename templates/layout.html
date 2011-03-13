@@ -13,7 +13,7 @@ $ homepath = ctx.homepath
       $if description:
         <div class="page-description">$description</div>
       <div class=navigation>
-        $if account.is_logged_in:
+        $if account.is_logged_in():
           <form class="login-menu" method=post action="$homepath/logout">
             <input type=hidden name=csrf_token value=$csrf_token()>
             $if not rendered.get('is_password_page'):
@@ -22,7 +22,7 @@ $ homepath = ctx.homepath
           </form>
         $elif not rendered.get('is_login_page'):
             <form class="login-menu" method=post action="$homepath/login">
-              $if account.is_new:
+              $if account.is_new():
                 $if not rendered.get('is_password_page'):
                   <a class="important internal-link" href="$homepath/set_password">Quick! Own your nest!</a>
               $else:
@@ -35,7 +35,7 @@ $ homepath = ctx.homepath
       $for flash in flashes():
         $if loop.first:
           <ul class=flashes>
-            <li>$flash</li>
+        <li>$flash</li>
         $if loop.last:
           </ul>
  

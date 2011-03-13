@@ -4,7 +4,7 @@ import web
 ### config
 DB_FILENAME = 'flocks.db'
 DEFAULT_FLOCK_FILENAME = 'default_flock.js'
-LOGIN_TIMEOUT = 60
+LOGIN_TIMEOUT = 3600
 DEBUG_DB = False
 ###
 
@@ -25,7 +25,7 @@ if web.config.get('_session') is None:
 else:
     session = web.config._session
 
-# The flash() trick I've learned from flask
+# The flash() trick they do at http://flask.pocoo.org
 def flash(msg):
     flashes = session.get('flashed_messages',[])
     session['flashed_messages'] = flashes+[msg]
@@ -33,6 +33,7 @@ def flash(msg):
 def pop_flashed_messages():
     flashes = session.get('flashed_messages',[])
     session['flashed_messages'] = []
+    print "Flashes: {0}".format(flashes)
     return flashes
     
     
@@ -120,58 +121,54 @@ def datetime2str(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S')
 def str2datetime(s): return datetime.datetime.strptime(s,'%Y-%m-%dT%H:%M:%S')
 
 class Sam:
-    def __init__(self,db,app):
+    def __init__(self,db):
         self.jdb = JsonDb(db,"sam")
-        self.app = app
-        self.is_new = not self.jdb.has_key('passhash')
-        self.loadhook()
-        self.app.add_processor(lambda handler: [self.loadhook(),handler()][1])
 
-    def loadhook(self):
+    def is_new(self):
+        return not self.jdb.has_key('passhash')
+
+    def is_logged_in(self):
         expires = session.get('sam_expires')
+        print "Expires: {0}".format(expires)
         if expires:
-            if now()<str2datetime(expires):
-                self._set_logged_in()
-                return
+            if datetime2str(now())<expires:
+                self._renew_lease()
+                return True
             else:
                 flash("Automatically logged out because of idle time.")
-        self._set_logged_out()
+                self.logout()
+        return False
 
-    def _set_logged_in(self):
+    def _renew_lease(self):
         session['sam_expires'] = datetime2str(now()+seconds2delta(LOGIN_TIMEOUT))
-        self.is_logged_in = True
+        print "Expiry renewed: {0}".format(session.get('sam_expires'))
     
-    def _set_logged_out(self):
-        self.is_logged_in = False
-        if session.has_key('sam_expires'):
-            del session['sam_expires']
-
     def _check_password(self,password):
-        assert not self.is_new,"Attempt to check password with empty account"
         import hmac
         return hmac.new(self.jdb['key'].decode('hex'),password).hexdigest() == self.jdb['passhash']
 
     def login(self,password):
         if self._check_password(password):
-            self._set_logged_in()
+            self._renew_lease()
             return True
-        self._set_logged_out()
+        self.logout()
         return False
 
     def logout(self):
-        self._set_logged_out()
+        print "Logged out: {0}".format(session.get('sam_expires'))
+        if session.has_key('sam_expires'):
+            del session['sam_expires']
 
     def change_password(self,oldpass,newpass):
-        "oldpass is ignored if self.is_new"
-        if self.is_new or self._check_password(oldpass):
+        "oldpass is ignored if self.is_new()"
+        if self.is_new() or self._check_password(oldpass):
             import hmac
             from os import urandom
             key = urandom(20)
             self.jdb.update({
                 'key':key.encode('hex'),
                 'passhash':hmac.new(key,newpass).hexdigest()})
-            self.is_new = False
-            self._set_logged_in()
+            self._renew_lease()
             return True
         return False
     
@@ -261,12 +258,12 @@ def get_root_or_public_flock(db):
     else:
         root = import_flock_file(db,DEFAULT_FLOCK_FILENAME)
         jdb['flock'] = root
-    if global_account.is_logged_in:
+    if global_account.is_logged_in():
         return root
     return subflock(root,'public') or {'type':'flock','title':'No public flock','items':[]}
 
 ### our single account manager
-global_account = Sam(global_db,app)
+global_account = Sam(global_db)
 
 ### Render objects
 render_globals = {
@@ -286,16 +283,13 @@ plain_render = web.template.render('templates',globals=render_globals)
 class view_flock:
     def GET(self):
         flock = flock_cachify(get_root_or_public_flock(global_db),feed_dict=JsonDb(global_db,"feed"))
-        return render.index({
-            'title':flock.get('title','[untitled]'),
-            'description':flock.get('description',''),
-            'items':[flock_render(item,plain_render.flocknode) for item in flock.get('items',[])] })
+        return render.index({'flock':flock,'rendered':flock_render(flock,plain_render.flocknode)})
 
 class view_login:
     login_form = web.form.Form(
         web.form.Password("password",description="Password",tabindex=1))
     def GET(self):
-        if global_account.is_new: # can't login to an empty nest
+        if global_account.is_new(): # can't login to an empty nest
             flash("Can't login to an empty nest.")
             return web.redirect(web.url('/'))
         return render.login({'form':self.login_form()})
@@ -328,11 +322,12 @@ class view_set_password:
         ]
     )
     def GET(self):
-        if not (global_account.is_logged_in or global_account.is_new):
+        if not (global_account.is_logged_in() or global_account.is_new()):
             flash("You're not logged in. Can't change your password.")
             return web.redirect(web.url('/'))
         form = self.password_form()
-        if global_account.is_new:
+        if global_account.is_new():
+            # Hide oldpass field
             form.inputs[0].attrs['style'] = 'display:none'
             form.inputs[0].description = ''
         return render.set_password({'form':form})
@@ -345,7 +340,7 @@ class view_set_password:
                 return web.redirect(web.url('/'))
             flash("Incorrect password. Try again.")
         form.fill(oldpass='',newpass='',newagain='') # we don't want password hints in the html source
-        if global_account.is_new:
+        if global_account.is_new():
             form.inputs[0].attrs['style'] = 'display:none'
             form.inputs[0].description = ''
         return render.set_password({'form':form})
