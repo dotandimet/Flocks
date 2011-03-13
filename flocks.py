@@ -18,25 +18,23 @@ urls = (
 app = web.application(urls, globals())
 global_db = web.database(dbn='sqlite',db=DB_FILENAME)
 
-# Session/debug tweak from http://webpy.org/cookbook/session_with_reloader
+#### Session/debug tweak from http://webpy.org/cookbook/session_with_reloader
 if web.config.get('_session') is None:
-    session = web.session.Session(app, web.session.DiskStore('sessions'))
-    web.config._session = session
+    global_session = web.session.Session(app, web.session.DiskStore('sessions'))
+    web.config._session = global_session
 else:
-    session = web.config._session
+    global_session = web.config._session
 
-# The flash() trick they do at http://flask.pocoo.org
+#### The flash() trick they do at http://flask.pocoo.org
 def flash(msg):
-    flashes = session.get('flashed_messages',[])
-    session['flashed_messages'] = flashes+[msg]
+    flashes = global_session.get('flashed_messages',[])
+    global_session['flashed_messages'] = flashes+[msg]
 
 def pop_flashed_messages():
-    flashes = session.get('flashed_messages',[])
-    session['flashed_messages'] = []
+    flashes = global_session.get('flashed_messages',[])
+    global_session['flashed_messages'] = []
     print "Flashes: {0}".format(flashes)
     return flashes
-    
-    
 
 #### CSRF protection
 def csrf_token():
@@ -44,10 +42,10 @@ def csrf_token():
   <input type=hidden name=csrf_token value="$csrf_token()">
 You'll need to initialize your render object like:
   web.template.render('templates',globals={'csrf_token':csrf_token})"""
-    if not session.has_key('csrf_token'):
+    if not global_session.has_key('csrf_token'):
         from uuid import uuid4
-        session.csrf_token=uuid4().hex
-    return session.csrf_token
+        global_session.csrf_token=uuid4().hex
+    return global_session.csrf_token
 
 def csrf_protected(f):
     """Usage:
@@ -57,7 +55,7 @@ def csrf_protected(f):
 (Remember to have a csrf_token() hidden field at the form itself)"""
     def decorated(*args,**kwargs):
         inp = web.input()
-        if not (inp.has_key('csrf_token') and inp.csrf_token==session.pop('csrf_token',None)):
+        if not (inp.has_key('csrf_token') and inp.csrf_token==global_session.pop('csrf_token',None)):
             raise web.HTTPError(
                 "400 Bad request",
                 {'content-type':'text/html'},
@@ -128,7 +126,7 @@ class Sam:
         return not self.jdb.has_key('passhash')
 
     def is_logged_in(self):
-        expires = session.get('sam_expires')
+        expires = global_session.get('sam_expires')
         print "Expires: {0}".format(expires)
         if expires:
             if datetime2str(now())<expires:
@@ -140,8 +138,8 @@ class Sam:
         return False
 
     def _renew_lease(self):
-        session['sam_expires'] = datetime2str(now()+seconds2delta(LOGIN_TIMEOUT))
-        print "Expiry renewed: {0}".format(session.get('sam_expires'))
+        global_session['sam_expires'] = datetime2str(now()+seconds2delta(LOGIN_TIMEOUT))
+        print "Expiry renewed: {0}".format(global_session.get('sam_expires'))
     
     def _check_password(self,password):
         import hmac
@@ -155,9 +153,9 @@ class Sam:
         return False
 
     def logout(self):
-        print "Logged out: {0}".format(session.get('sam_expires'))
-        if session.has_key('sam_expires'):
-            del session['sam_expires']
+        print "Logged out: {0}".format(global_session.get('sam_expires'))
+        if global_session.has_key('sam_expires'):
+            del global_session['sam_expires']
 
     def change_password(self,oldpass,newpass):
         "oldpass is ignored if self.is_new()"
@@ -297,7 +295,7 @@ class view_login:
     def POST(self):
         form = self.login_form()
         if form.validates() and global_account.login(form.d.password):
-            flash('You have been logged in.')
+            flash('Welcome.')
             return web.redirect(web.url('/'))
         form.fill(password='') # we don't want password hints in the html source
         flash('Wrong password. Please try again.')
@@ -307,7 +305,7 @@ class view_logout:
     @csrf_protected
     def POST(self):
         global_account.logout()
-        flash('You have been logged out.')
+        flash('Goodbye.')
         return web.redirect(web.url('/'))
 
 class view_set_password:
