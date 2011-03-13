@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import web
+from exceptions import Exception
 
 ### config
 DB_FILENAME = 'flocks.db'
 DEFAULT_FLOCK_FILENAME = 'default_flock.js'
 LOGIN_TIMEOUT_SECONDS = 3600
+CACHE_TTL = 180
 DEBUG_DB = False
 ###
 
@@ -13,6 +15,7 @@ urls = (
     "/login","view_login",
     "/logout","view_logout",
     "/set_password","view_set_password",
+    "/api/feed","view_api_feed",
 )
 
 app = web.application(urls, globals())
@@ -112,9 +115,12 @@ example:
 import datetime
 def now(): return datetime.datetime.now()
 def seconds2delta(secs): return datetime.timedelta(0,secs)
-def tuple2datetime(t): return datetime.datetime(*tuple[6:])
 def datetime2str(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S')
 def str2datetime(s): return datetime.datetime.strptime(s,'%Y-%m-%dT%H:%M:%S')
+def timestruct2datetime(t): return datetime.datetime(*t[:6])
+def timestruct2str(t):
+    "can also accept None (doesn't raise error)"
+    return t and datetime2str(timestruct2datetime(t))
 
 #### Sam - Single accout manager
 class Sam:
@@ -230,11 +236,51 @@ def flock_render(node,template):
 
 ### Feed functions
 def feed_update(myfeed,otherfeed):
+    modified = False
     for k in ['title','description','link']:
         if k=='link' or not myfeed.has_key(k): # link is always updated
             v=otherfeed.get(k,'').strip()
-            if v:
+            if v and v != myfeed.get(k):
                 myfeed[k]=v
+                modified = True
+    return modified
+
+import feedparser
+def feed_fetch(url,cache_dict={},feed_dict={}):
+    cache = cache_dict.get(url)
+    if cache:
+        if datetime2str(now())<cache.get('expires',''):
+            # cache is still fresh
+            return cache
+        etag = cache.get('etag')
+        modified = cache.get('modified')
+    else:
+        etag = modified = None
+    parsed = feedparser.parse(url,etag=etag,modified=modified)
+    status = parsed.get('status',500)
+    if status != 304:
+        print "Status {0} (bozo={1}) for {2} ({3},{4})".format(status,parsed.bozo,url,etag,modified)
+    if status == 200:
+        # kludge because there are 3 ways for a feed to show modified time (if None counts as one)
+        feed_modified = timestruct2str(parsed.get('updated_parsed',parsed.feed.get('updated_parsed',None)))
+        etag = parsed.get('etag')
+        feed_info = feed_dict.get(url,{})
+        if feed_update(feed_info,{'title':parsed.feed.title,'link':parsed.feed.link}):
+            feed_dict[url] = feed_info
+        cache = {
+            'expires':datetime2str(now()+seconds2delta(CACHE_TTL)),
+            'modified':feed_modified,
+            'etag':etag,
+            'entries':[{'id':'i{0}'.format(hash(e.id)),'title':e.title, 'link':e.link,
+                        'description':e.description, 'modified':timestruct2str(e.updated_parsed),
+                        # add feed info in case we put the entry in a multi-feed timeline
+                        'feed_url':url,'feed_title':feed_info['title'],
+                        'feed_link':feed_info['link'],'feed_rtl':feed_info.get('rtl')
+                       } for e in parsed.entries],
+        }
+        cache.update(feed_info)
+        cache_dict[url] = cache
+    return cache_dict[url]
 
 ### DB and JsonDb utilities
 
@@ -285,6 +331,14 @@ class view_flock:
     def GET(self):
         flock = flock_cachify(get_root_or_public_flock(global_db),feed_dict=JsonDb(global_db,"feed"))
         return render.index({'flock':flock,'rendered':flock_render(flock,plain_render.flocknode)})
+
+class view_api_feed:
+    def GET(self):
+        web.header('Content-Type', 'application/json')
+        try:
+            return json.dumps(feed_fetch(web.input().get('url')))
+        except Exception,e:
+            return json.dumps({'error':`e`})
 
 class view_login:
     login_form = web.form.Form(
