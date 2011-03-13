@@ -4,15 +4,15 @@ import web
 ### config
 DB_FILENAME = 'flocks.db'
 DEFAULT_FLOCK_FILENAME = 'default_flock.js'
-LOGIN_TIMEOUT = 3600
+LOGIN_TIMEOUT = 60
 DEBUG_DB = False
 ###
 
 urls = (
-    "/", "flock",
-    "/login","login",
-    "/logout","logout",
-    "/set_password","set_password",
+    "/", "view_flock",
+    "/login","view_login",
+    "/logout","view_logout",
+    "/set_password","view_set_password",
 )
 
 app = web.application(urls, globals())
@@ -24,6 +24,18 @@ if web.config.get('_session') is None:
     web.config._session = session
 else:
     session = web.config._session
+
+# The flash() trick I've learned from flask
+def flash(msg):
+    flashes = session.get('flashed_messages',[])
+    session['flashed_messages'] = flashes+[msg]
+
+def pop_flashed_messages():
+    flashes = session.get('flashed_messages',[])
+    session['flashed_messages'] = []
+    return flashes
+    
+    
 
 #### CSRF protection
 def csrf_token():
@@ -98,34 +110,41 @@ example:
         return '<JsonDB {0}:{1} {2}>'.format(`self.db`,`self.namespace`,`self.keys()`)
 
 ### Sam - Single accout manager
-import time
-def timestamp():
-    "Return now as standard seconds-since-jon-and-yoko. For expiry time arithmetics"
-    return time.mktime(time.gmtime())
+
+# some time utils
+import datetime
+def now(): return datetime.datetime.now()
+def seconds2delta(secs): return datetime.timedelta(0,secs)
+def tuple2datetime(t): return datetime.datetime(*tuple[6:])
+def datetime2str(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S')
+def str2datetime(s): return datetime.datetime.strptime(s,'%Y-%m-%dT%H:%M:%S')
 
 class Sam:
-    def __init__(self,db,session):
+    def __init__(self,db,app):
         self.jdb = JsonDb(db,"sam")
-        self.session = session
-        self.auto_logged_out = False
+        self.app = app
         self.is_new = not self.jdb.has_key('passhash')
-        self.expires=not self.is_new and self.session.get('sam_expires')
-        if self.expires:
-            if timestamp()<expires:
+        self.loadhook()
+        self.app.add_processor(lambda handler: [self.loadhook(),handler()][1])
+
+    def loadhook(self):
+        expires = session.get('sam_expires')
+        if expires:
+            if now()<str2datetime(expires):
                 self._set_logged_in()
                 return
-            else: 
-                self.auto_logged_out = True
+            else:
+                flash("Automatically logged out because of idle time.")
         self._set_logged_out()
 
     def _set_logged_in(self):
-        self.session['sam_expires'] = timestamp()+LOGIN_TIMEOUT
+        session['sam_expires'] = datetime2str(now()+seconds2delta(LOGIN_TIMEOUT))
         self.is_logged_in = True
     
     def _set_logged_out(self):
         self.is_logged_in = False
-        if self.session.has_key('sam_expires'):
-            del self.session['sam_expires']
+        if session.has_key('sam_expires'):
+            del session['sam_expires']
 
     def _check_password(self,password):
         assert not self.is_new,"Attempt to check password with empty account"
@@ -247,24 +266,24 @@ def get_root_or_public_flock(db):
     return subflock(root,'public') or {'type':'flock','title':'No public flock','items':[]}
 
 ### our single account manager
-global_account = Sam(global_db,session)
+global_account = Sam(global_db,app)
 
 ### Render objects
-render = web.template.render('templates',base='layout',globals={
+render_globals = {
     'ctx':web.ctx, # handy environment info
     'account':global_account,
+    'flashes':pop_flashed_messages,
     'csrf_token':csrf_token # to enable csrf_token() hidden fields
-})
+}
+
+render = web.template.render('templates',base='layout',globals=render_globals)
+
 # plain_render doesn't use a page layout wrapper
 # for partial render, xml, etc.
-plain_render = web.template.render('templates',globals={
-    'ctx':web.ctx, # handy environment info
-    'account':global_account,
-    'csrf_token':csrf_token # to enable csrf_token() hidden fields
-})
+plain_render = web.template.render('templates',globals=render_globals)
 
 ### Views
-class flock:
+class view_flock:
     def GET(self):
         flock = flock_cachify(get_root_or_public_flock(global_db),feed_dict=JsonDb(global_db,"feed"))
         return render.index({
@@ -272,28 +291,32 @@ class flock:
             'description':flock.get('description',''),
             'items':[flock_render(item,plain_render.flocknode) for item in flock.get('items',[])] })
 
-class login:
+class view_login:
     login_form = web.form.Form(
         web.form.Password("password",description="Password",tabindex=1))
     def GET(self):
         if global_account.is_new: # can't login to an empty nest
+            flash("Can't login to an empty nest.")
             return web.redirect(web.url('/'))
         return render.login({'form':self.login_form()})
     @csrf_protected
     def POST(self):
         form = self.login_form()
         if form.validates() and global_account.login(form.d.password):
+            flash('You have been logged in.')
             return web.redirect(web.url('/'))
         form.fill(password='') # we don't want password hints in the html source
-        return render.login({'form':self.login_form(),'error':'Wrong password. Please try again'})
+        flash('Wrong password. Please try again.')
+        return render.login({'form':self.login_form()})
 
-class logout:
+class view_logout:
     @csrf_protected
     def POST(self):
         global_account.logout()
+        flash('You have been logged out.')
         return web.redirect(web.url('/'))
 
-class set_password:
+class view_set_password:
     password_form = web.form.Form(
         web.form.Password("oldpass",description="Old password",tabindex=1),
         web.form.Password("newpass",
@@ -305,6 +328,9 @@ class set_password:
         ]
     )
     def GET(self):
+        if not (global_account.is_logged_in or global_account.is_new):
+            flash("You're not logged in. Can't change your password.")
+            return web.redirect(web.url('/'))
         form = self.password_form()
         if global_account.is_new:
             form.inputs[0].attrs['style'] = 'display:none'
@@ -313,16 +339,16 @@ class set_password:
     @csrf_protected
     def POST(self):
         form=self.password_form()
-        error = ''
         if form.validates():
             if global_account.change_password(form.d.oldpass,form.d.newpass):
+                flash("Your password was saved.")
                 return web.redirect(web.url('/'))
-            error = "Incorrect password. Try again."
+            flash("Incorrect password. Try again.")
         form.fill(oldpass='',newpass='',newagain='') # we don't want password hints in the html source
         if global_account.is_new:
             form.inputs[0].attrs['style'] = 'display:none'
             form.inputs[0].description = ''
-        return render.set_password({'form':form,'error':error})
+        return render.set_password({'form':form})
 
 if __name__ == "__main__":
    app.run()

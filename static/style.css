@@ -52,6 +52,8 @@ input[type="submit"] {
 
 form.login-menu { float:right }
 form.inline-form { display:inline }
+from td { text-align:left; vertical-align:top }
+form th { text-align:right; vertical-align:top }
 
 div.page {
     background: white;
