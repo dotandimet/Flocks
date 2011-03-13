@@ -2,4 +2,6 @@ $def with (args)
 $ flock = args['flock']
 $var title: ${'Flock: '+flock.get('title','(untitled flock)')}
 $var description: ${flock.get('description','')}
-$:args.get('rendered')
+<ul class="flock">
+  <li>$:args.get('rendered')</li>
+</ul>
