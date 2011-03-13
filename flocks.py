@@ -4,7 +4,7 @@ import web
 ### config
 DB_FILENAME = 'flocks.db'
 DEFAULT_FLOCK_FILENAME = 'default_flock.js'
-LOGIN_TIMEOUT = 3600
+LOGIN_TIMEOUT_SECONDS = 3600
 DEBUG_DB = False
 ###
 
@@ -33,7 +33,6 @@ def flash(msg):
 def pop_flashed_messages():
     flashes = global_session.get('flashed_messages',[])
     global_session['flashed_messages'] = []
-    print "Flashes: {0}".format(flashes)
     return flashes
 
 #### CSRF protection
@@ -108,9 +107,8 @@ example:
     def __repr__(self):     
         return '<JsonDB {0}:{1} {2}>'.format(`self.db`,`self.namespace`,`self.keys()`)
 
-### Sam - Single accout manager
 
-# some time utils
+#### handy time utils
 import datetime
 def now(): return datetime.datetime.now()
 def seconds2delta(secs): return datetime.timedelta(0,secs)
@@ -118,16 +116,23 @@ def tuple2datetime(t): return datetime.datetime(*tuple[6:])
 def datetime2str(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S')
 def str2datetime(s): return datetime.datetime.strptime(s,'%Y-%m-%dT%H:%M:%S')
 
+#### Sam - Single accout manager
 class Sam:
-    def __init__(self,db):
+    """This object has no internal state. All is stored in jdb and the session.
+Methods:
+    is_new() - True until first time you set a password
+    is_logged_in()
+    login(password)
+    change_password(oldpass,newpass) - oldpass is ignored if is_new()"""
+    def __init__(self,db,auto_logout_seconds=3600):
         self.jdb = JsonDb(db,"sam")
+        self.timeout = seconds2delta(auto_logout_seconds)
 
     def is_new(self):
         return not self.jdb.has_key('passhash')
 
     def is_logged_in(self):
         expires = global_session.get('sam_expires')
-        print "Expires: {0}".format(expires)
         if expires:
             if datetime2str(now())<expires:
                 self._renew_lease()
@@ -138,8 +143,7 @@ class Sam:
         return False
 
     def _renew_lease(self):
-        global_session['sam_expires'] = datetime2str(now()+seconds2delta(LOGIN_TIMEOUT))
-        print "Expiry renewed: {0}".format(global_session.get('sam_expires'))
+        global_session['sam_expires'] = datetime2str(now()+self.timeout)
     
     def _check_password(self,password):
         import hmac
@@ -153,7 +157,6 @@ class Sam:
         return False
 
     def logout(self):
-        print "Logged out: {0}".format(global_session.get('sam_expires'))
         if global_session.has_key('sam_expires'):
             del global_session['sam_expires']
 
@@ -261,7 +264,7 @@ def get_root_or_public_flock(db):
     return subflock(root,'public') or {'type':'flock','title':'No public flock','items':[]}
 
 ### our single account manager
-global_account = Sam(global_db)
+global_account = Sam(global_db,LOGIN_TIMEOUT_SECONDS)
 
 ### Render objects
 render_globals = {
