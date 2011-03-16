@@ -1,17 +1,24 @@
 # -*- coding: utf-8 -*-
-import web
-from exceptions import Exception
 
 ### config
+DEBUG = True
+DEBUG_SQL = False
 DB_FILENAME = 'flocks.db'
 DEFAULT_FLOCK_FILENAME = 'default_flock.js'
 LOGIN_TIMEOUT_SECONDS = 3600
-CACHE_TTL = 180
-DEBUG_DB = False
+FEED_CACHE_TIMEOUT = 180 # Some feeds are etag and last-modified deaf/dumb
+HTTP_PORT = 6378 # "Nest" on phone keyboard
 ###
+
+import web
+from sys import argv
+argv[1:] = ['127.0.0.1:{0}'.format(HTTP_PORT)] # That's how you set ip:port in web.py ;) 
+web.config.debug = DEBUG
+web.config.debug_sql = DEBUG_SQL # This only works for a tweaked version of web.py (see README)
 
 urls = (
     "/", "view_flock",
+    "/feed", "view_feed",
     "/login","view_login",
     "/logout","view_logout",
     "/set_password","view_set_password",
@@ -27,6 +34,20 @@ if web.config.get('_session') is None:
     web.config._session = global_session
 else:
     global_session = web.config._session
+
+#### handy time utils
+import datetime
+def now(): return datetime.datetime.utcnow()
+def seconds2delta(secs): return datetime.timedelta(0,secs)
+def datetime2str(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S')
+def str2datetime(s): return datetime.datetime.strptime(s,'%Y-%m-%dT%H:%M:%S')
+def timestruct2datetime(t): return datetime.datetime(*t[:6])
+def timestruct2str(t):
+    "can also accept None (doesn't raise error)"
+    return t and datetime2str(timestruct2datetime(t))
+def timestruct2friendly(t):
+    "can also accept None (doesn't raise error)"
+    return t and web.datestr(timestruct2datetime(t))
 
 #### The flash() trick they do at http://flask.pocoo.org
 def flash(msg):
@@ -111,24 +132,14 @@ example:
         return '<JsonDB {0}:{1} {2}>'.format(`self.db`,`self.namespace`,`self.keys()`)
 
 
-#### handy time utils
-import datetime
-def now(): return datetime.datetime.now()
-def seconds2delta(secs): return datetime.timedelta(0,secs)
-def datetime2str(dt): return dt.strftime('%Y-%m-%dT%H:%M:%S')
-def str2datetime(s): return datetime.datetime.strptime(s,'%Y-%m-%dT%H:%M:%S')
-def timestruct2datetime(t): return datetime.datetime(*t[:6])
-def timestruct2str(t):
-    "can also accept None (doesn't raise error)"
-    return t and datetime2str(timestruct2datetime(t))
-
 #### Sam - Single accout manager
 class Sam:
-    """This object has no internal state. All is stored in jdb and the session.
+    """There's a single global Sam instance called global_account (or 'account' inside templates).
 Methods:
-    is_new() - True until first time you set a password
+    is_new() - True for a new db before the first time you set a password
     is_logged_in()
     login(password)
+    logout()
     change_password(oldpass,newpass) - oldpass is ignored if is_new()"""
     def __init__(self,db,auto_logout_seconds=3600):
         self.jdb = JsonDb(db,"sam")
@@ -140,6 +151,9 @@ Methods:
     def is_logged_in(self):
         expires = global_session.get('sam_expires')
         if expires:
+            if self.is_new(): # happens when you delete db but have a stale cookie
+                del global_session['sam_expires']
+                return False
             if datetime2str(now())<expires:
                 self._renew_lease()
                 return True
@@ -237,7 +251,7 @@ def flock_render(node,template):
 ### Feed functions
 def feed_update(myfeed,otherfeed):
     modified = False
-    for k in ['title','description','link']:
+    for k in ['title','description','link','rtl']:
         if k=='link' or not myfeed.has_key(k): # link is always updated
             v=otherfeed.get(k,'').strip()
             if v and v != myfeed.get(k):
@@ -268,11 +282,12 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
         if feed_update(feed_info,{'title':parsed.feed.title,'link':parsed.feed.link}):
             feed_dict[url] = feed_info
         cache = {
-            'expires':datetime2str(now()+seconds2delta(CACHE_TTL)),
+            'expires':datetime2str(now()+seconds2delta(FEED_CACHE_TIMEOUT)),
             'modified':feed_modified,
             'etag':etag,
-            'entries':[{'id':'i{0}'.format(hash(e.id)),'title':e.title, 'link':e.link,
+            'entries':[{'id':'i{0}'.format(hash((url,e.updated_parsed))),'title':e.title, 'link':e.link,
                         'description':e.description, 'modified':timestruct2str(e.updated_parsed),
+                        'friendly_time':timestruct2friendly(e.updated_parsed),
                         # add feed info in case we put the entry in a multi-feed timeline
                         'feed_url':url,'feed_title':feed_info['title'],
                         'feed_link':feed_info['link'],'feed_rtl':feed_info.get('rtl')
@@ -280,7 +295,7 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
         }
         cache.update(feed_info)
         cache_dict[url] = cache
-    return cache_dict[url]
+    return cache_dict[url] # might throw an error (e.g. if bad url)
 
 ### DB and JsonDb utilities
 
@@ -290,6 +305,7 @@ def import_feeds(feed_dict,import_dict):
             url = k[len('feed:'):]
             feed = feed_dict.get(url,{})
             feed_update(feed,import_dict[k])
+            print "{0}: {1}".format(k,import_dict[k])
             feed_dict[url] = feed
 
 def import_flock_file(db,filename):
@@ -312,11 +328,19 @@ def get_root_or_public_flock(db):
 ### our single account manager
 global_account = Sam(global_db,LOGIN_TIMEOUT_SECONDS)
 
+### jinja2 utils
+import jinja2util
+def urlize(s):
+    return jinja2util.urlize(s,nofollow=True)
+
+from urllib2 import quote
+
 ### Render objects
 render_globals = {
     'ctx':web.ctx, # handy environment info
     'account':global_account,
     'flashes':pop_flashed_messages,
+    'urlquote':quote,
     'csrf_token':csrf_token # to enable csrf_token() hidden fields
 }
 
@@ -326,19 +350,35 @@ render = web.template.render('templates',base='layout',globals=render_globals)
 # for partial render, xml, etc.
 plain_render = web.template.render('templates',globals=render_globals)
 
+### JSON views
+
+from exceptions import Exception
+
+class view_api_feed:
+    def PUT(self):
+        web.header('Content-Type', 'application/json')
+        return json.dumps(feed_fetch(web.input().get('url'),JsonDb(global_db,"cache"),JsonDb(global_db,"feed")))
+    def GET(self): ### temporary
+        return self.PUT()
+
 ### Views
 class view_flock:
     def GET(self):
         flock = flock_cachify(get_root_or_public_flock(global_db),feed_dict=JsonDb(global_db,"feed"))
         return render.index({'flock':flock,'rendered':flock_render(flock,plain_render.flocknode)})
 
-class view_api_feed:
+class view_feed:
     def GET(self):
-        web.header('Content-Type', 'application/json')
-        try:
-            return json.dumps(feed_fetch(web.input().get('url')))
-        except Exception,e:
-            return json.dumps({'error':`e`})
+        url = web.input().get('url');
+        # To do: better validation
+        if not url:
+            flash('Bad or missing url')
+            raise web.seeother('/')
+        feed_info = JsonDb(global_db,"feed").get(url,{})
+        title = feed_info.get('title',url)
+        description = urlize(feed_info.get('description',''))
+        feeds = [{'title':title,'url':url}]
+        return render.timeline({'title':title,'description':description,'feeds':feeds})
 
 class view_login:
     login_form = web.form.Form(
@@ -346,14 +386,14 @@ class view_login:
     def GET(self):
         if global_account.is_new(): # can't login to an empty nest
             flash("Can't login to an empty nest.")
-            return web.redirect(web.url('/'))
+            raise web.seeother('/')
         return render.login({'form':self.login_form()})
     @csrf_protected
     def POST(self):
         form = self.login_form()
         if form.validates() and global_account.login(form.d.password):
             flash('Welcome.')
-            return web.redirect(web.url('/'))
+            raise web.seeother('/')
         form.fill(password='') # we don't want password hints in the html source
         flash('Wrong password. Please try again.')
         return render.login({'form':self.login_form()})
@@ -363,7 +403,7 @@ class view_logout:
     def POST(self):
         global_account.logout()
         flash('Goodbye.')
-        return web.redirect(web.url('/'))
+        raise web.seeother('/')
 
 class view_set_password:
     password_form = web.form.Form(
@@ -379,7 +419,7 @@ class view_set_password:
     def GET(self):
         if not (global_account.is_logged_in() or global_account.is_new()):
             flash("You're not logged in. Can't change your password.")
-            return web.redirect(web.url('/'))
+            raise web.seeother('/')
         form = self.password_form()
         if global_account.is_new():
             # Hide oldpass field
@@ -392,7 +432,7 @@ class view_set_password:
         if form.validates():
             if global_account.change_password(form.d.oldpass,form.d.newpass):
                 flash("Your password was saved.")
-                return web.redirect(web.url('/'))
+                raise web.seeother('/')
             flash("Incorrect password. Try again.")
         form.fill(oldpass='',newpass='',newagain='') # we don't want password hints in the html source
         if global_account.is_new():

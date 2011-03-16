@@ -3,15 +3,19 @@ $def with (rendered)
 $ homepath = ctx.homepath
 <html lang="en">
   <head>
-    <title>$rendered.get('title','(untitled)') | Flocks</title>
+    <title>$:rendered.get('title','(untitled)') | Flocks</title>
     <link rel=stylesheet type=text/css href="$homepath/static/style.css">
+    <script type=text/javascript src="$homepath/static/jquery.js"></script>
+    <script type=text/javascript src="$homepath/static/jquery.ajaxmanager.js"></script>
+    <script type=text/javascript src="$homepath/static/flocks.js"></script>
+
   </head>
   <body>
     <div class=page>
-      <h1>$rendered.get('title')</h1>
+      <h1>$:rendered.get('title')</h1>
       $ description = rendered.get('description','')
       $if description:
-        <div class="page-description">$description</div>
+        <div class="page-description">$:description</div>
       <div class=navigation>
         $if account.is_logged_in():
           <form class="login-menu" method=post action="$homepath/logout">

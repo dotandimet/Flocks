@@ -20,8 +20,8 @@
   }, 
   "feed:http://friendfeed.com/thedod?format=atom": {
     "link": "http://friendfeed.com/thedod", 
-    "description": "The Dod's friendfeed, including http://twitter.com/TheRealDod", 
-    "title": "The Dod"
+    "description": "Several of The Dod's feeds, including http://twitter.com/TheRealDod", 
+    "title": "The Dod's friendfeed"
   }, 
   "flock": {
     "items": [

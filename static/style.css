@@ -26,6 +26,8 @@ a:focus, a:active { outline: 0 }
     text-shadow: -2px -2px 4px #FFFFFF !important;
 }
 
+.hilite { background:#ffff7f !important }
+
 input[type="text"],
 input[type="password"] {
     background: white;
@@ -136,7 +138,7 @@ div.page ul.messages li {
     position:relative; /* enable input.toggler position:absolute trickery */
     margin: 10px 0;
     padding: 5px;
-    background: #F0FAF9;
+    background: #F0F0F0;
     border: 1px solid #DBF3F1;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -160,6 +162,7 @@ a.mute, span.mute { background:#BFBFBF; padding:1px 4px }
 div.page .toggler-label {
     background: #F0FAF9;
     padding:5px 8px 5px 20px;
+    line-height:1.8em;
     border: 1px solid #DBF3F1;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -215,6 +218,10 @@ a.site-reference, a.feed-reference {
 
 .entry-title {
     font-weight:bold
+}
+
+.entry-description {
+    margin-top:12px;
 }
 
 ul.flashes {
