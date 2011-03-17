@@ -40,7 +40,8 @@ input[type="password"] {
     color: #105751;
 }
 
-input[type="submit"] {
+input[type="submit"],
+button {
     background: #105751;
     border: 1px solid #073B36;
     padding: 1px 3px;
@@ -54,6 +55,7 @@ input[type="submit"] {
 
 form.login-menu { float:right }
 form.inline-form { display:inline }
+form.inline-form label { display:none }
 from td { text-align:left; vertical-align:top }
 form th { text-align:right; vertical-align:top }
 
@@ -140,7 +142,7 @@ div.page ul.messages th, div.page ul.messages td {
 div.page ul.messages li {
     position:relative; /* enable input.toggler position:absolute trickery */
     margin: 10px 0;
-    padding: 5px;
+    padding: 10px 5px 5px;
     background: white;
     border: 1px solid #7f7f7f;
     -moz-border-radius: 5px;
@@ -151,21 +153,23 @@ div.page ul.flock {
     list-style: none;
     margin: 8px 16px 0;
     padding: 0;
+    background:#F0F0F0;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
 }
 
 div.page ul.flock li {
     position:relative; /* enable input.toggler position:absolute trickery */
     margin: 0 0 4px 20px;
-    padding: 5px;
+    padding: 10px 5px 5px;
 }
 
-.mute a { background:#DFDFDF; padding:1px 4px }
-a.mute, span.mute, span.mute a { background:#BFBFBF; padding:1px 4px }
+.mute .node-title { background:#CFCFCF; padding:1px 4px }
+span.mute { background:#AFAFAF; padding:1px 4px }
 
 div.page .toggler-label {
     background: #D0DAF9;
-    padding:5px 8px 8px 20px;
-    line-height:1.8em;
+    padding:10px 8px 8px 24px;
     border: none;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -174,8 +178,10 @@ div.page .toggler-label {
 /* expand/collapse toggler checkbox. Inspired by http://www.thecssninja.com/css/css-tree-menu */
 input.toggler {
     position:absolute;
-    top:8px; left:4px;
+    top:12px; left:6px;
 }
+
+ul.messages input.toggler { top:22px }
 
 span.toggler-label {
     padding-left:20px
@@ -208,7 +214,7 @@ div.page ul.messages li small, .item-time {
 div.item-time {
     direction:ltr !important;
     float:right;
-    margin-left:4px;
+    margin:5px;
 }
 
 .site-reference, .feed-reference {

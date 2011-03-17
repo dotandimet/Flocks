@@ -4,13 +4,13 @@ $ extra_css = node.get('mute') and ' mute' or ''
 $ homepath = ctx.homepath
 $if node['type'] == 'flock':
   <span class=toggler-label id=${node['cache_slug'] or 'f-root'}>
-    <span class="${'node-title'+extra_css}">
-      <a class="internal-link" href="$homepath/timeline${node['cache_slug'] and '?flock='+node['cache_slug'] or ''}">$node['title']</a>
-      [<a class="internal-link" href="$homepath/timeline?all=yes${node['cache_slug'] and '&flock='+node['cache_slug'] or ''}">+ hidden</a>]
-    </span>
+    <span class="node-title$extra_css">$node['title']</span>
+    <form class='inline-form' method=post action="$homepath/timeline">
+      $:flock_form({'csrf_token':csrf_token(),'flock':node['cache_slug']}).render_css()
+    </form>
   </span>
   <input type=checkbox id=${'toggle_' + node['cache_slug']} class=toggler checked=checked>
-  <div class="${'flock-items' + extra_css}">
+  <div class="flock-items$extra_css">
     <ul class="flock">
       $for item in args['items']:
         <li>$:item</li>
@@ -18,5 +18,8 @@ $if node['type'] == 'flock':
   </div>
 $else:
   <span id=$node['cache_slug']>
-    <a class='feed-reference internal-link$extra_css' href='$homepath/feed?url=${urlquote(node['url'])}')>$node['cache_title']</a>
+    <span class=node-title$extra_css>$node['cache_title']</span>
+    <form class='inline-form' method=post action="$homepath/feed">
+      $:feed_form({'csrf_token':csrf_token(),'url':node['url']}).render_css()
+    </form>
   </span>

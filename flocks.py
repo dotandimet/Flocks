@@ -16,6 +16,7 @@ HTTP_PORT = 6378 # "Nest" on phone keyboard
 import web
 from sys import argv
 argv[1:] = ['127.0.0.1:{0}'.format(HTTP_PORT)] # That's how you set ip:port in web.py ;) 
+from urllib2 import quote
 web.config.debug = DEBUG
 web.config.debug_sql = DEBUG_SQL # This only works for a tweaked version of web.py (see README)
 
@@ -88,7 +89,7 @@ def csrf_protected(f):
             #    {'content-type':'text/html'},
             #    'CSRF forgery (or stale browser form). <a href="">Back to the form</a>')
             ### The "don't panic" approach :) Yes. I know it mixes low level and GUI.
-            flash('Something went wrong. Probably a stale browser. Please try again.')
+            flash('Something went wrong. Maybe a "stale" page in the browser. Please try again.')
             raise web.seeother('/')
         return f(*args,**kwargs)
     return decorated
@@ -280,10 +281,10 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
         modified = cache.get('modified')
     else:
         etag = modified = None
-    parsed = feedparser.parse(url,etag=etag,modified=modified)
+    parsed = feedparser.parse(url,etag=etag)
     status = parsed.get('status',500)
-    if status != 304:
-        print "Status {0} (bozo={1}) for {2} ({3},{4})".format(status,parsed.bozo,url,etag,modified)
+    if status != 305:
+        print "Status {0} ({1} entries, bozo={2}) for {3}  (etag={4})".format(status,len(parsed.get('entries',[])),parsed.get('bozo_exception'),url,etag)
     if status == 200:
         # kludge because there are 3 ways for a feed to show modified time (if None counts as one)
         feed_modified = timestruct2str(parsed.get('updated_parsed',parsed.feed.get('updated_parsed',None)))
@@ -349,19 +350,28 @@ def form_errors(form):
     return ['{0}: {1}'.format(i.description,i.note) for i in form.inputs if i.note]
 
 feed_form = web.form.Form(
-    web.form.Textbox('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed url')
+    web.form.Hidden('csrf_token'),
+    web.form.Hidden('url'),
+    #web.form.Textbox('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed URL'),
+    web.form.Button('Watch')
 )
 
-timeline_form = web.form.Form(
-    web.form.Textbox('flock'),
-    web.form.Dropdown('all',args=[('','not hidden'),('yes','all feeds')],value='')
+def get_feed_render_info(url,feed_dict=None):
+        return dict(get_feed_info(url,feed_dict),
+            button_html='<form class="inline-form" method="post" action="{0}">{1}</form>'.format(
+                web.url('/feed'), quote(feed_form({'csrf_token':csrf_token(),'url':url}).render_css())))
+
+flock_form = web.form.Form(
+    web.form.Hidden('csrf_token'),
+    web.form.Hidden('flock'),
+    web.form.Dropdown('all',args=[('','skip hidden'),('yes','show hidden')],value='',description='All feeds?'),
+    web.form.Button('Watch')
 )
 
 import jinja2util
 def urlize(s):
     return jinja2util.urlize(s,nofollow=True)
 
-from urllib2 import quote
 
 ### Render objects
 render_globals = {
@@ -369,6 +379,8 @@ render_globals = {
     'account':global_account,
     'flashes':pop_flashed_messages,
     'urlquote':quote,
+    'feed_form':feed_form,
+    'flock_form':flock_form,
     'csrf_token':csrf_token # to enable csrf_token() hidden fields
 }
 
@@ -397,12 +409,16 @@ class view_flock:
 
 class view_feed:
     def GET(self):
-        form = feed_form(web.input())
+        flash('Please select a feed to view.')
+        return web.seeother('/')
+    @csrf_protected
+    def POST(self):
+        form = feed_form()
         if not form.validates():
             for e in form_errors(form):
                 flash(e)
             raise web.seeother('/')
-        feed_info = get_feed_info(form.d.url)
+        feed_info = get_feed_render_info(form.d.url)
         title = feed_info['title']
         description = urlize(feed_info.get('description',''))
         return render.timeline({'title':title,'description':description,'feeds':[feed_info],
@@ -410,7 +426,11 @@ class view_feed:
 
 class view_timeline:
     def GET(self):
-        form = timeline_form(web.input())
+        flash('Please select a flock to view.')
+        return web.seeother('/')
+    @csrf_protected
+    def POST(self):
+        form = flock_form()
         if not form.validates():
             for e in form_errors(form):
                 flash(e)
@@ -418,9 +438,9 @@ class view_timeline:
         if form.d.flock:
             flock = flock_get(flock,form.d.flock.split('_'))
         if not flock:
-            flash('Flock not found. Please try again')
+            flash('Flock not found. This can happen when you logout, edit your flock, etc.')
             raise web.seeother('/')
-        feeds = map(get_feed_info,get_flock_feeds(flock,respect_mutes=not form.d.all))
+        feeds = map(get_feed_render_info,get_flock_feeds(flock,respect_mutes=not form.d.all))
         title = flock['title']
         description = urlize(flock.get('description',''))
         return render.timeline({'title':title,'description':description,'feeds':feeds,

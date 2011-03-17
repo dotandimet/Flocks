@@ -15,14 +15,14 @@ window.populate_from_feed=function(ul,data) {
         if (e>=window.MAX_FEED_ENTRIES) { break; }
         entry=data['entries'][e];
         feed_dir=entry['feed_rtl']?'rtl':'ltr';
-        var span=$('<span/>').addClass('toggler-label');
-        span.append($('<div/>').addClass('item-time').text(entry['friendly_time']));
-        span.append($('<a/>').addClass('internal-link feed-reference').attr(
-            'href',window.HTML_FEED_URL+'?url='+entry['feed_url']).text(entry['feed_title']));
-        span.append(': ').append($('<a/>').addClass('entry_title').addClass(feed_dir).attr(
+        var item_header=$('<div/>').addClass('toggler-label').addClass(feed_dir);
+        item_header.append($('<div/>').addClass('item-time').text(entry['friendly_time']));
+        item_header.append($('<span/>').addClass('feed-reference').text(entry['feed_title']));
+        item_header.append(window.BUTTON_HTML[entry['feed_url']]);
+        item_header.append(': ').append($('<a/>').addClass('entry_title').attr(
             'href',entry['link']).html(entry['title']));
         var li=$('<li/>').attr('id',entry['id']).append(
-            span).append($('<input/>').addClass('toggler').attr('type','checkbox'));
+            item_header).append($('<input/>').addClass('toggler').attr('type','checkbox'));
         li.append($('<div/>').addClass('entry-description').addClass(feed_dir).html(entry['description']));
         li.data('modified',entry['modified']);
         var sameold=ul.find('#'+li.attr('id'));
