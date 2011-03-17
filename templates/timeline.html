@@ -2,17 +2,20 @@ $def with (args)
 $var title: ${'Timeline: '+args.get('title','(untitled)')}
 $var description: $:{args.get('description','')}
 $ homepath = ctx.homepath
-<a href="#" class="internal-link" id="refresh">Refresh</a>
+<a href="#" class="internal-link" id="refresh">Refresh now</a>
 <ul class=messages id=messages>
 </ul>
 <script type=text/javascript>
+window.MAX_FEED_ENTRIES = $args.get('max_feed_entries',5)
+window.FEED_REFRESH_SECONDS = $args.get('feed_refresh_seconds',300)
 window.HTML_FEED_URL = '$homepath/feed';
 window.AJAX_FEED_URL = '$homepath/api/feed';
 window.AJAX_LOADER_HTML =
-    '<img alt="loading..." width="128" height="15" src="$homepath/static/ajax-loader.gif">';
+    '<img alt="loading..." width="16" height="16" src="$homepath/static/ajax-loader.gif">';
 window.fetch_feeds = function() {
+    window.abort_all_fetches();
 $for f in args.get('feeds',[]):
-    fetch_from_feed('messages',unescape('${f['title']}'),'$f['url']');
+    fetch_from_feed('messages',unescape('$f['title']'),'$f['url']');
 }
 $$(function() {
     $$('#refresh').click(fetch_feeds);

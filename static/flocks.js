@@ -6,12 +6,13 @@ window.tweak_content=function() {
     $('a:not(.internal-link)').attr('target','_blank');
 }
 $(function() {
-    $.manageAjax.create('flocks'); 
+    $.manageAjax.create('flocks',{queue:true}); 
     window.tweak_content();
 });
 
 window.populate_from_feed=function(ul,data) {
     for (e in data['entries']) { 
+        if (e>=window.MAX_FEED_ENTRIES) { break; }
         entry=data['entries'][e];
         feed_dir=entry['feed_rtl']?'rtl':'ltr';
         var span=$('<span/>').addClass('toggler-label');
@@ -42,24 +43,33 @@ window.populate_from_feed=function(ul,data) {
 
 window.fetch_from_feed=function(ul_id,feed_title,feed_url) {
     var ul=$('#'+ul_id);
-    var loading=$('<li/>').html(AJAX_LOADER_HTML).prepend('Loading '+feed_title+': ');
-    ul.prepend(loading);
+    var loading=$('<li/>').addClass('fetching-ajax').html(AJAX_LOADER_HTML).prepend('Loading '+feed_title+': ').data('modified','');
+    ul.append(loading);
     $.manageAjax.add('flocks',{
         url:window.AJAX_FEED_URL,
         data:{url:feed_url},
         ul:ul,
+        refresh:"window.fetch_from_feed('"+ul_id+"','"+feed_title+"','"+feed_url+"')",
+        refresh_seconds:1000*window.FEED_REFRESH_SECONDS,
         loading:loading,
         success:function(data,textStatus,xhr,options){
-            options['loading'].remove();
+            options['loading'].slideUp(500).remove();
             populate_from_feed(options['ul'],data);
             window.tweak_content();
+            setTimeout(options['refresh'],options['refresh_seconds']);
         },
         error:function(data,textStatus,xhr,options){
-            options['loading'].find('img').replaceWith('failed');
+            options['loading'].find('img').replaceWith('failed').prependTo(options['ul']).addClass('hilite').delay(10000).slideUp(500).remove();
+            setTimeout(options['refresh'],options['refresh_seconds']);
         },
         abort:function(data,textStatus,xhr,options){
-            options['loading'].find('img').replaceWith('aborted');
+            options['loading'].find('img').replaceWith('aborted').prependTo(options['ul']).addClass('hilite').delay(10000).slideUp(500).remove();
+            setTimeout(options['refresh'],options['refresh_seconds']);
         }
     });
+}
+window.abort_all_fetches = function() {
+    $.manageAjax.clear('flocks');
+    $('.fetching-ajax').slideUp(500).remove();
 }
 

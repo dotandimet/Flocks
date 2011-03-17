@@ -125,8 +125,11 @@ div.page div.followstatus {
 
 div.page ul.messages {
     list-style: none;
+    background:#F0F0F0;
     margin: 0;
-    padding: 0;
+    padding: 4px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
 }
 
 /* Makes friendfeed look nicer */
@@ -138,8 +141,8 @@ div.page ul.messages li {
     position:relative; /* enable input.toggler position:absolute trickery */
     margin: 10px 0;
     padding: 5px;
-    background: #F0F0F0;
-    border: 1px solid #DBF3F1;
+    background: white;
+    border: 1px solid #7f7f7f;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
 }
@@ -157,13 +160,13 @@ div.page ul.flock li {
 }
 
 .mute a { background:#DFDFDF; padding:1px 4px }
-a.mute, span.mute { background:#BFBFBF; padding:1px 4px }
+a.mute, span.mute, span.mute a { background:#BFBFBF; padding:1px 4px }
 
 div.page .toggler-label {
-    background: #F0FAF9;
-    padding:5px 8px 5px 20px;
+    background: #D0DAF9;
+    padding:5px 8px 8px 20px;
     line-height:1.8em;
-    border: 1px solid #DBF3F1;
+    border: none;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
 }
@@ -171,7 +174,7 @@ div.page .toggler-label {
 /* expand/collapse toggler checkbox. Inspired by http://www.thecssninja.com/css/css-tree-menu */
 input.toggler {
     position:absolute;
-    top:4px; left:4px;
+    top:8px; left:4px;
 }
 
 span.toggler-label {

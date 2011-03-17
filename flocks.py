@@ -5,8 +5,11 @@ DEBUG = True
 DEBUG_SQL = False
 DB_FILENAME = 'flocks.db'
 DEFAULT_FLOCK_FILENAME = 'default_flock.js'
-LOGIN_TIMEOUT_SECONDS = 3600
+LOGIN_TIMEOUT_SECONDS = 3600 # 1 hour.
+FEED_REFRESH_SECONDS = 120 # delay (for each feed) between javascript fetches
 FEED_CACHE_TIMEOUT = 180 # Some feeds are etag and last-modified deaf/dumb
+MAX_SINGLE_FEED_ENTRIES = 50
+MAX_FLOCK_FEED_ENTRIES = 10
 HTTP_PORT = 6378 # "Nest" on phone keyboard
 ###
 
@@ -19,6 +22,7 @@ web.config.debug_sql = DEBUG_SQL # This only works for a tweaked version of web.
 urls = (
     "/", "view_flock",
     "/feed", "view_feed",
+    "/timeline", "view_timeline",
     "/login","view_login",
     "/logout","view_logout",
     "/set_password","view_set_password",
@@ -47,7 +51,7 @@ def timestruct2str(t):
     return t and datetime2str(timestruct2datetime(t))
 def timestruct2friendly(t):
     "can also accept None (doesn't raise error)"
-    return t and web.datestr(timestruct2datetime(t))
+    return t and timestruct2datetime(t).ctime()
 
 #### The flash() trick they do at http://flask.pocoo.org
 def flash(msg):
@@ -79,10 +83,13 @@ def csrf_protected(f):
     def decorated(*args,**kwargs):
         inp = web.input()
         if not (inp.has_key('csrf_token') and inp.csrf_token==global_session.pop('csrf_token',None)):
-            raise web.HTTPError(
-                "400 Bad request",
-                {'content-type':'text/html'},
-                'CSRF forgery (or stale browser form). <a href="">Back to the form</a>')
+            #raise web.HTTPError(
+            #    "400 Bad request",
+            #    {'content-type':'text/html'},
+            #    'CSRF forgery (or stale browser form). <a href="">Back to the form</a>')
+            ### The "don't panic" approach :) Yes. I know it mixes low level and GUI.
+            flash('Something went wrong. Probably a stale browser. Please try again.')
+            raise web.seeother('/')
         return f(*args,**kwargs)
     return decorated
 
@@ -259,6 +266,9 @@ def feed_update(myfeed,otherfeed):
                 modified = True
     return modified
 
+def get_feed_info(url,feed_dict=None):
+        return dict((feed_dict or JsonDb(global_db,"feed")).get(url,{'title':url}),url=url)
+
 import feedparser
 def feed_fetch(url,cache_dict={},feed_dict={}):
     cache = cache_dict.get(url)
@@ -325,10 +335,28 @@ def get_root_or_public_flock(db):
         return root
     return subflock(root,'public') or {'type':'flock','title':'No public flock','items':[]}
 
+    
+
 ### our single account manager
 global_account = Sam(global_db,LOGIN_TIMEOUT_SECONDS)
 
-### jinja2 utils
+### Template and form helpers
+from urlparse import urlsplit
+def valid_url(url):
+    return urlsplit(url).scheme in ['http','https']
+
+def form_errors(form):
+    return ['{0}: {1}'.format(i.description,i.note) for i in form.inputs if i.note]
+
+feed_form = web.form.Form(
+    web.form.Textbox('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed url')
+)
+
+timeline_form = web.form.Form(
+    web.form.Textbox('flock'),
+    web.form.Dropdown('all',args=[('','not hidden'),('yes','all feeds')],value='')
+)
+
 import jinja2util
 def urlize(s):
     return jinja2util.urlize(s,nofollow=True)
@@ -346,9 +374,9 @@ render_globals = {
 
 render = web.template.render('templates',base='layout',globals=render_globals)
 
-# plain_render doesn't use a page layout wrapper
+# baseless_render doesn't use a page layout wrapper
 # for partial render, xml, etc.
-plain_render = web.template.render('templates',globals=render_globals)
+baseless_render = web.template.render('templates',globals=render_globals)
 
 ### JSON views
 
@@ -365,20 +393,38 @@ class view_api_feed:
 class view_flock:
     def GET(self):
         flock = flock_cachify(get_root_or_public_flock(global_db),feed_dict=JsonDb(global_db,"feed"))
-        return render.index({'flock':flock,'rendered':flock_render(flock,plain_render.flocknode)})
+        return render.index({'flock':flock,'rendered':flock_render(flock,baseless_render.flocknode)})
 
 class view_feed:
     def GET(self):
-        url = web.input().get('url');
-        # To do: better validation
-        if not url:
-            flash('Bad or missing url')
+        form = feed_form(web.input())
+        if not form.validates():
+            for e in form_errors(form):
+                flash(e)
             raise web.seeother('/')
-        feed_info = JsonDb(global_db,"feed").get(url,{})
-        title = feed_info.get('title',url)
+        feed_info = get_feed_info(form.d.url)
+        title = feed_info['title']
         description = urlize(feed_info.get('description',''))
-        feeds = [{'title':title,'url':url}]
-        return render.timeline({'title':title,'description':description,'feeds':feeds})
+        return render.timeline({'title':title,'description':description,'feeds':[feed_info],
+            'max_feed_entries':MAX_SINGLE_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
+
+class view_timeline:
+    def GET(self):
+        form = timeline_form(web.input())
+        if not form.validates():
+            for e in form_errors(form):
+                flash(e)
+        flock = get_root_or_public_flock(global_db)
+        if form.d.flock:
+            flock = flock_get(flock,form.d.flock.split('_'))
+        if not flock:
+            flash('Flock not found. Please try again')
+            raise web.seeother('/')
+        feeds = map(get_feed_info,get_flock_feeds(flock,respect_mutes=not form.d.all))
+        title = flock['title']
+        description = urlize(flock.get('description',''))
+        return render.timeline({'title':title,'description':description,'feeds':feeds,
+            'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
 class view_login:
     login_form = web.form.Form(

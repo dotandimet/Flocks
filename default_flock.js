@@ -206,7 +206,7 @@
   }, 
   "feed:http://friendfeed.com/kitteh?format=atom": {
     "link": "http://friendfeed.com/kitteh", 
-    "description": "\"Cat Lovers group on friendfeed", 
+    "description": "\"Cat Lovers\" group on friendfeed", 
     "title": "KITTEH"
   }, 
   "feed:http://xkcd.com/atom.xml": {
