@@ -27,7 +27,9 @@ window.populate_from_feed=function(ul,data) {
         li.data('modified',entry['modified']);
         var sameold=ul.find('#'+li.attr('id'));
         if (sameold.length) {
-            sameold.eq(0).replaceWith(li);
+            // if it's hard to find out whether a checkbox is checked, might as well take the whole element :)
+            li.find('input.toggler').replaceWith(sameold.find('input.toggler'));
+            sameold.replaceWith(li);
         } else {
             var older=ul.find('li').filter(function() {
                 return $(this).data('modified')<li.data('modified');
