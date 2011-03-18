@@ -18,7 +18,7 @@ $if node['type'] == 'flock':
   </div>
 $else:
   <span id=$node['cache_slug']>
-    <span class=node-title$extra_css>$node['cache_title']</span>
+    <span class="node-title$extra_css">$node['cache_title']</span>
     <form class='inline-form' method=post action="$homepath/feed">
       $:feed_form({'csrf_token':csrf_token(),'url':node['url']}).render_css()
     </form>

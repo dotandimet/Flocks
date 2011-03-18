@@ -40,8 +40,7 @@ input[type="password"] {
     color: #105751;
 }
 
-input[type="submit"],
-button {
+a.internal-link, button {
     background: #105751;
     border: 1px solid #073B36;
     padding: 1px 3px;
@@ -50,7 +49,7 @@ button {
     font-weight: bold;
     -moz-border-radius: 2px;
     -webkit-border-radius: 2px;
-    color: white;
+    color: white !important;
 }
 
 form.login-menu { float:right }

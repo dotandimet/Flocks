@@ -2,7 +2,5 @@ $def with (args)
 $var title: Please login
 $var is_login_page: True
 <form action="" method=POST>
-  <input type=hidden name=csrf_token value=$csrf_token()>
   $:args['form'].render()
-  <input type="submit" value="Login">
 </form>

@@ -19,10 +19,9 @@ $ homepath = ctx.homepath
       <div class=navigation>
         $if account.is_logged_in():
           <form class="login-menu" method=post action="$homepath/logout">
-            <input type=hidden name=csrf_token value=$csrf_token()>
             $if not rendered.get('is_password_page'):
               <a class=internal-link href="$homepath/set_password">Change password</a>
-            <input type=submit value="Logout">
+            $:logout_form({'csrf_token':csrf_token()}).render_css()
           </form>
         $elif not rendered.get('is_login_page'):
             <form class="login-menu" method=post action="$homepath/login">
@@ -30,9 +29,7 @@ $ homepath = ctx.homepath
                 $if not rendered.get('is_password_page'):
                   <a class="important internal-link" href="$homepath/set_password">Quick! Own your nest!</a>
               $else:
-                <input type=hidden name=csrf_token value=$csrf_token()>
-                <input type="password" name="password">
-                <input type=submit value="Login">
+                $:login_form({'csrf_token':csrf_token()}).render_css()
           </form>
         <a class=internal-link href="$homepath/">Flock</a>
       </div>

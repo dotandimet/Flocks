@@ -8,6 +8,7 @@ DEFAULT_FLOCK_FILENAME = 'default_flock.js'
 LOGIN_TIMEOUT_SECONDS = 3600 # 1 hour.
 FEED_REFRESH_SECONDS = 120 # delay (for each feed) between javascript fetches
 FEED_CACHE_TIMEOUT = 180 # Some feeds are etag and last-modified deaf/dumb
+MAX_PAGE_ENTRIES = 50
 MAX_SINGLE_FEED_ENTRIES = 50
 MAX_FLOCK_FEED_ENTRIES = 10
 HTTP_PORT = 6378 # "Nest" on phone keyboard
@@ -341,7 +342,31 @@ def get_root_or_public_flock(db):
 ### our single account manager
 global_account = Sam(global_db,LOGIN_TIMEOUT_SECONDS)
 
-### Template and form helpers
+### Template forms
+login_form = web.form.Form(
+    web.form.Hidden('csrf_token'),
+    web.form.Password("password",description="Password",tabindex=1),
+    web.form.Button('Login'))
+
+logout_form = web.form.Form(
+    web.form.Hidden('csrf_token'),
+    web.form.Button('Logout'))
+
+feed_form = web.form.Form(
+    web.form.Hidden('csrf_token'),
+    web.form.Hidden('url'),
+    #web.form.Textbox('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed URL'),
+    web.form.Button('Channel')
+)
+
+flock_form = web.form.Form(
+    web.form.Hidden('csrf_token'),
+    web.form.Hidden('flock'),
+    web.form.Dropdown('all',args=[('','skip hidden'),('yes','show hidden')],value='',description='All feeds?'),
+    web.form.Button('Channels')
+)
+
+### Validators and other rendering helpers
 from urlparse import urlsplit
 def valid_url(url):
     return urlsplit(url).scheme in ['http','https']
@@ -349,24 +374,10 @@ def valid_url(url):
 def form_errors(form):
     return ['{0}: {1}'.format(i.description,i.note) for i in form.inputs if i.note]
 
-feed_form = web.form.Form(
-    web.form.Hidden('csrf_token'),
-    web.form.Hidden('url'),
-    #web.form.Textbox('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed URL'),
-    web.form.Button('Watch')
-)
-
 def get_feed_render_info(url,feed_dict=None):
         return dict(get_feed_info(url,feed_dict),
             button_html='<form class="inline-form" method="post" action="{0}">{1}</form>'.format(
                 web.url('/feed'), quote(feed_form({'csrf_token':csrf_token(),'url':url}).render_css())))
-
-flock_form = web.form.Form(
-    web.form.Hidden('csrf_token'),
-    web.form.Hidden('flock'),
-    web.form.Dropdown('all',args=[('','skip hidden'),('yes','show hidden')],value='',description='All feeds?'),
-    web.form.Button('Watch')
-)
 
 import jinja2util
 def urlize(s):
@@ -379,6 +390,8 @@ render_globals = {
     'account':global_account,
     'flashes':pop_flashed_messages,
     'urlquote':quote,
+    'login_form':login_form,
+    'logout_form':logout_form,
     'feed_form':feed_form,
     'flock_form':flock_form,
     'csrf_token':csrf_token # to enable csrf_token() hidden fields
@@ -421,7 +434,8 @@ class view_feed:
         feed_info = get_feed_render_info(form.d.url)
         title = feed_info['title']
         description = urlize(feed_info.get('description',''))
-        return render.timeline({'title':title,'description':description,'feeds':[feed_info],
+        return render.timeline({'title':u'Channel: {0}'.format(title),'description':description,'feeds':[feed_info],
+            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':True,
             'max_feed_entries':MAX_SINGLE_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
 class view_timeline:
@@ -443,26 +457,27 @@ class view_timeline:
         feeds = map(get_feed_render_info,get_flock_feeds(flock,respect_mutes=not form.d.all))
         title = flock['title']
         description = urlize(flock.get('description',''))
-        return render.timeline({'title':title,'description':description,'feeds':feeds,
+        return render.timeline({'title':u'Channels: {0}'.format(title),'description':description,'feeds':feeds,
+            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':False,
             'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
 class view_login:
-    login_form = web.form.Form(
-        web.form.Password("password",description="Password",tabindex=1))
     def GET(self):
         if global_account.is_new(): # can't login to an empty nest
             flash("Can't login to an empty nest.")
             raise web.seeother('/')
-        return render.login({'form':self.login_form()})
+        form = login_form()
+        form.fill(csrf_token=csrf_token(),password='')
+        return render.login({'form':form})
     @csrf_protected
     def POST(self):
-        form = self.login_form()
+        form = login_form()
         if form.validates() and global_account.login(form.d.password):
             flash('Welcome.')
             raise web.seeother('/')
-        form.fill(password='') # we don't want password hints in the html source
+        form.fill(csrf_token=csrf_token(),password='')
         flash('Wrong password. Please try again.')
-        return render.login({'form':self.login_form()})
+        return render.login({'form':form})
 
 class view_logout:
     @csrf_protected
@@ -473,11 +488,13 @@ class view_logout:
 
 class view_set_password:
     password_form = web.form.Form(
+        web.form.Hidden("csrf_token"),
         web.form.Password("oldpass",description="Old password",tabindex=1),
         web.form.Password("newpass",
             web.form.Validator("must be at least 8 characters",lambda x:len(x)>=8),
             description="New password",tabindex=2),
         web.form.Password("newagain",description="New password again",tabindex=3),
+        web.form.Button("Update password"),
         validators = [
             web.form.Validator("Passwords didn't match.", lambda i: i.newpass == i.newagain)
         ]
@@ -487,10 +504,11 @@ class view_set_password:
             flash("You're not logged in. Can't change your password.")
             raise web.seeother('/')
         form = self.password_form()
+        form.fill(csrf_token=csrf_token(),oldpass='',newpass='',newagain='')
         if global_account.is_new():
             # Hide oldpass field
-            form.inputs[0].attrs['style'] = 'display:none'
-            form.inputs[0].description = ''
+            form.inputs[1].attrs['style'] = 'display:none'
+            form.inputs[1].description = ''
         return render.set_password({'form':form})
     @csrf_protected
     def POST(self):
@@ -500,7 +518,7 @@ class view_set_password:
                 flash("Your password was saved.")
                 raise web.seeother('/')
             flash("Incorrect password. Try again.")
-        form.fill(oldpass='',newpass='',newagain='') # we don't want password hints in the html source
+        form.fill(csrf_token=csrf_token(),oldpass='',newpass='',newagain='')
         if global_account.is_new():
             form.inputs[0].attrs['style'] = 'display:none'
             form.inputs[0].description = ''

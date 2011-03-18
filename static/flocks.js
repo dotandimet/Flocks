@@ -17,12 +17,13 @@ window.populate_from_feed=function(ul,data) {
         feed_dir=entry['feed_rtl']?'rtl':'ltr';
         var item_header=$('<div/>').addClass('toggler-label').addClass(feed_dir);
         item_header.append($('<div/>').addClass('item-time').text(entry['friendly_time']));
-        item_header.append($('<span/>').addClass('feed-reference').text(entry['feed_title']));
         item_header.append(window.BUTTON_HTML[entry['feed_url']]);
+        item_header.append($('<span/>').addClass('feed-reference').text(entry['feed_title']));
         item_header.append(': ').append($('<a/>').addClass('entry_title').attr(
             'href',entry['link']).html(entry['title']));
-        var li=$('<li/>').attr('id',entry['id']).append(
-            item_header).append($('<input/>').addClass('toggler').attr('type','checkbox'));
+        var toggler = $('<input/>').addClass('toggler').attr('type','checkbox');
+        if (window.EXPAND_ALL_ENTRIES) {toggler.attr('checked','checked');}
+        var li=$('<li/>').attr('id',entry['id']).append(item_header).append(toggler);
         li.append($('<div/>').addClass('entry-description').addClass(feed_dir).html(entry['description']));
         li.data('modified',entry['modified']);
         var sameold=ul.find('#'+li.attr('id'));
@@ -39,7 +40,8 @@ window.populate_from_feed=function(ul,data) {
             } else {
                 ul.append(li);
             }
-        }
+        };
+        ul.find('li:gt('+window.MAX_PAGE_ENTRIES+')').remove();
     }
 }
 

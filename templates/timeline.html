@@ -1,13 +1,15 @@
 $def with (args)
-$var title: ${'Timeline: '+args.get('title','(untitled)')}
+$var title: $args.get('title','(untitled)')
 $var description: $:{args.get('description','')}
 $ homepath = ctx.homepath
 <div><a href="#" id="refresh" class="internal-link">Refresh now</a></div>
 <ul class=messages id=messages>
 </ul>
 <script type=text/javascript>
-window.MAX_FEED_ENTRIES = $args.get('max_feed_entries',5)
-window.FEED_REFRESH_SECONDS = $args.get('feed_refresh_seconds',300)
+window.MAX_PAGE_ENTRIES = ${args.get('max_page_entries',5)};
+window.MAX_FEED_ENTRIES = ${args.get('max_feed_entries',5)};
+window.FEED_REFRESH_SECONDS = ${args.get('feed_refresh_seconds',300)};
+window.EXPAND_ALL_ENTRIES = ${args.get('expand_all_entries') and 'true' or 'false'};
 window.HTML_FEED_URL = '$homepath/feed';
 window.AJAX_FEED_URL = '$homepath/api/feed';
 window.AJAX_LOADER_HTML =
