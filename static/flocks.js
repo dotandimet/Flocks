@@ -8,6 +8,7 @@ window.tweak_content=function() {
 $(function() {
     $.manageAjax.create('flocks',{queue:true}); 
     window.tweak_content();
+    $('.focusme:first').focus()
 });
 
 window.populate_from_feed=function(ul,data) {

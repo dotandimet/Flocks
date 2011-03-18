@@ -10,8 +10,8 @@ window.MAX_PAGE_ENTRIES = ${args.get('max_page_entries',5)};
 window.MAX_FEED_ENTRIES = ${args.get('max_feed_entries',5)};
 window.FEED_REFRESH_SECONDS = ${args.get('feed_refresh_seconds',300)};
 window.EXPAND_ALL_ENTRIES = ${args.get('expand_all_entries') and 'true' or 'false'};
-window.HTML_FEED_URL = '$homepath/feed';
-window.AJAX_FEED_URL = '$homepath/api/feed';
+window.HTML_FEED_URL = '$homepath/channel';
+window.AJAX_FEED_URL = '$homepath/api/channel';
 window.AJAX_LOADER_HTML =
     '<img alt="loading..." width="16" height="16" src="$homepath/static/ajax-loader.gif">';
 window.BUTTON_HTML = {

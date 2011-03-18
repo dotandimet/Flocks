@@ -23,12 +23,12 @@ web.config.debug_sql = DEBUG_SQL # This only works for a tweaked version of web.
 
 urls = (
     "/", "view_flock",
-    "/feed", "view_feed",
-    "/timeline", "view_timeline",
+    "/channel", "view_channel",
+    "/channels", "view_channels",
     "/login","view_login",
     "/logout","view_logout",
     "/set_password","view_set_password",
-    "/api/feed","view_api_feed",
+    "/api/channel","view_api_channel",
 )
 
 app = web.application(urls, globals())
@@ -300,7 +300,7 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
             'entries':[{'id':'i{0}'.format(hash((url,e.updated_parsed))),'title':e.title, 'link':e.link,
                         'description':e.description, 'modified':timestruct2str(e.updated_parsed),
                         'friendly_time':timestruct2friendly(e.updated_parsed),
-                        # add feed info in case we put the entry in a multi-feed timeline
+                        # add feed info in case we put the entry in a multi-channel timeline
                         'feed_url':url,'feed_title':feed_info['title'],
                         'feed_link':feed_info['link'],'feed_rtl':feed_info.get('rtl')
                        } for e in parsed.entries],
@@ -345,21 +345,21 @@ global_account = Sam(global_db,LOGIN_TIMEOUT_SECONDS)
 ### Template forms
 login_form = web.form.Form(
     web.form.Hidden('csrf_token'),
-    web.form.Password("password",description="Password",tabindex=1),
+    web.form.Password("password",description="Password",tabindex=1,class_='focusme'),
     web.form.Button('Login'))
 
 logout_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Button('Logout'))
 
-feed_form = web.form.Form(
+channel_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Hidden('url'),
     #web.form.Textbox('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed URL'),
     web.form.Button('Channel')
 )
 
-flock_form = web.form.Form(
+channels_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Hidden('flock'),
     web.form.Dropdown('all',args=[('','skip hidden'),('yes','show hidden')],value='',description='All feeds?'),
@@ -377,7 +377,7 @@ def form_errors(form):
 def get_feed_render_info(url,feed_dict=None):
         return dict(get_feed_info(url,feed_dict),
             button_html='<form class="inline-form" method="post" action="{0}">{1}</form>'.format(
-                web.url('/feed'), quote(feed_form({'csrf_token':csrf_token(),'url':url}).render_css())))
+                web.url('/channel'), quote(channel_form({'csrf_token':csrf_token(),'url':url}).render_css())))
 
 import jinja2util
 def urlize(s):
@@ -392,8 +392,8 @@ render_globals = {
     'urlquote':quote,
     'login_form':login_form,
     'logout_form':logout_form,
-    'feed_form':feed_form,
-    'flock_form':flock_form,
+    'channel_form':channel_form,
+    'channels_form':channels_form,
     'csrf_token':csrf_token # to enable csrf_token() hidden fields
 }
 
@@ -407,7 +407,7 @@ baseless_render = web.template.render('templates',globals=render_globals)
 
 from exceptions import Exception
 
-class view_api_feed:
+class view_api_channel:
     def PUT(self):
         web.header('Content-Type', 'application/json')
         return json.dumps(feed_fetch(web.input().get('url'),JsonDb(global_db,"cache"),JsonDb(global_db,"feed")))
@@ -420,13 +420,13 @@ class view_flock:
         flock = flock_cachify(get_root_or_public_flock(global_db),feed_dict=JsonDb(global_db,"feed"))
         return render.index({'flock':flock,'rendered':flock_render(flock,baseless_render.flocknode)})
 
-class view_feed:
+class view_channel:
     def GET(self):
         flash('Please select a feed to view.')
         return web.seeother('/')
     @csrf_protected
     def POST(self):
-        form = feed_form()
+        form = channel_form()
         if not form.validates():
             for e in form_errors(form):
                 flash(e)
@@ -438,13 +438,13 @@ class view_feed:
             'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':True,
             'max_feed_entries':MAX_SINGLE_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
-class view_timeline:
+class view_channels:
     def GET(self):
         flash('Please select a flock to view.')
         return web.seeother('/')
     @csrf_protected
     def POST(self):
-        form = flock_form()
+        form = channels_form()
         if not form.validates():
             for e in form_errors(form):
                 flash(e)
@@ -489,10 +489,10 @@ class view_logout:
 class view_set_password:
     password_form = web.form.Form(
         web.form.Hidden("csrf_token"),
-        web.form.Password("oldpass",description="Old password",tabindex=1),
+        web.form.Password("oldpass",description="Old password",tabindex=1,class_='focusme'),
         web.form.Password("newpass",
             web.form.Validator("must be at least 8 characters",lambda x:len(x)>=8),
-            description="New password",tabindex=2),
+            description="New password",tabindex=2,class_='focusme'),
         web.form.Password("newagain",description="New password again",tabindex=3),
         web.form.Button("Update password"),
         validators = [

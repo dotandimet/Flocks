@@ -30,7 +30,7 @@ $ homepath = ctx.homepath
                   <a class="important internal-link" href="$homepath/set_password">Quick! Own your nest!</a>
               $else:
                 $:login_form({'csrf_token':csrf_token()}).render_css()
-          </form>
+            </form>
         <a class=internal-link href="$homepath/">Flock</a>
       </div>
       $for flash in flashes():
