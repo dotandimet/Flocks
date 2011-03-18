@@ -23,7 +23,6 @@ $for f in args.get('feeds',[]):
     '$f["url"]':unescape('$:f["button_html"]')$(not loop.last and ',' or '')
 }
 window.fetch_feeds = function() {
-    $$('#refresh').fadeOut(500).fadeIn(500); // some visual feedback
     window.abort_all_fetches();
     $for f in args.get('feeds',[]):
         fetch_from_feed('messages',unescape('$f['title']'),'$f['url']');
