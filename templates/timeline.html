@@ -2,7 +2,11 @@ $def with (args)
 $var title: $args.get('title','(untitled)')
 $var description: $:{args.get('description','')}
 $ homepath = ctx.homepath
-<div><a href="#" id="refresh" class="internal-link">Refresh now</a></div>
+<div id="loading-div">
+  <a href="#" id="refresh" class="internal-link">Refresh now</a>
+  <ul id="loading-list">
+  </ul>
+</div>
 <ul class=messages id=messages>
 </ul>
 <script type=text/javascript>

@@ -284,8 +284,9 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
         etag = modified = None
     parsed = feedparser.parse(url,etag=etag)
     status = parsed.get('status',500)
-    if status != 305:
-        print "Status {0} ({1} entries, bozo={2}) for {3}  (etag={4})".format(status,len(parsed.get('entries',[])),parsed.get('bozo_exception'),url,etag)
+    if status != 304:
+        print "Status {0} ({1} entries, bozo={2}) for {3}  (etag={4})".format(
+            status,len(parsed.get('entries',[])),parsed.get('bozo_exception'),url,etag)
     if status == 200:
         # kludge because there are 3 ways for a feed to show modified time (if None counts as one)
         feed_modified = timestruct2str(parsed.get('updated_parsed',parsed.feed.get('updated_parsed',None)))

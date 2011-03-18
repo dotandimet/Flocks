@@ -48,8 +48,8 @@ window.populate_from_feed=function(ul,data) {
 
 window.fetch_from_feed=function(ul_id,feed_title,feed_url) {
     var ul=$('#'+ul_id);
-    var loading=$('<li/>').addClass('fetching-ajax').html(AJAX_LOADER_HTML).prepend('Loading '+feed_title+': ').data('modified','');
-    ul.append(loading);
+    var loading=$('<li/>').addClass('fetching-ajax').html(AJAX_LOADER_HTML).append(feed_title).data('modified','');
+    $('#loading-list').append(loading);
     $.manageAjax.add('flocks',{
         url:window.AJAX_FEED_URL,
         data:{url:feed_url},
@@ -64,11 +64,15 @@ window.fetch_from_feed=function(ul_id,feed_title,feed_url) {
             setTimeout(options['refresh'],options['refresh_seconds']);
         },
         error:function(data,textStatus,xhr,options){
-            options['loading'].find('img').replaceWith('failed').prependTo(options['ul']).addClass('hilite').delay(10000).slideUp(500).remove();
+            options['loading'].find('img').replaceWith('Failed! ');
+            options['loading'].prependTo($('#loading-list')).addClass(
+                'hilite').click(function() {$(this).slideUp(1000).remove();});
             setTimeout(options['refresh'],options['refresh_seconds']);
         },
         abort:function(data,textStatus,xhr,options){
-            options['loading'].find('img').replaceWith('aborted').prependTo(options['ul']).addClass('hilite').delay(10000).slideUp(500).remove();
+            options['loading'].find('img').replaceWith('Aborted! ');
+            options['loading'].prependTo($('#loading-list')).addClass(
+                'hilite').click(function() {$(this).slideUp(1000).remove();});
             setTimeout(options['refresh'],options['refresh_seconds']);
         }
     });

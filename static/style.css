@@ -52,7 +52,7 @@ a.internal-link, button {
     color: white !important;
 }
 
-form.login-menu { float:right }
+form.login-menu { float:right; margin-left:4px }
 form.inline-form { display:inline }
 form.inline-form label { display:none }
 from td { text-align:left; vertical-align:top }
@@ -62,7 +62,7 @@ div.page {
     background: white;
     border: 1px solid #6ECCC4;
     width: 700px;
-    margin: 30px auto;
+    margin: 50px auto;
 }
 
 div.page h1 {
@@ -82,18 +82,24 @@ div.page-description {
     text-shadow: 0 0 2px #ffffff;
 }
 
-div.page div.navigation {
-    background: #DEE9E8;
+div.navigation {
+    position:fixed;
+    z-index:23;
+    top:0;
+    background: #6eccc4;
     padding: 4px 10px;
-    border-top: 1px solid #ccc;
-    border-bottom: 1px solid #eee;
+    background: 
+    border: 1px solid #6eccc4;
+    border-bottom: 1px solid #888;
     color: #888;
     font-size: 12px;
     letter-spacing: 0.5px;
     line-height: 24px;
+    width: 680px;
+    margin: 0 auto;
 }
 
-div.page div.navigation a {
+div.navigation a {
     color: #444;
     font-weight: bold;
 }
@@ -133,6 +139,25 @@ div.page ul.messages {
     -webkit-border-radius: 5px;
 }
 
+#loading-list {
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+}
+
+#loading-div {
+    position:fixed;
+    z-index:23;
+    top:0;
+    left:0;
+    width:140px;
+    background:#CCC;
+    min-height:50px;
+    border: 1px solid #888;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+
 /* Makes friendfeed look nicer */
 div.page ul.messages th, div.page ul.messages td {
     vertical-align:top;
@@ -144,6 +169,15 @@ div.page ul.messages li {
     padding: 10px 5px 5px;
     background: white;
     border: 1px solid #7f7f7f;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
+
+#loading-list li {
+    position:relative; /* enable input.toggler position:absolute trickery */
+    margin: 5px 0;
+    padding: 5px;
+    background: white;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
 }
