@@ -32,6 +32,12 @@ $ homepath = ctx.homepath
                 $:login_form({'csrf_token':csrf_token()}).render_css()
             </form>
         <a class=internal-link href="$homepath/">Flock</a>
+        <form class="inline-with-labels" method=post action="$homepath/channel">
+            $code:
+                feedform = feed_form()
+                feedform.fill(csrf_token=csrf_token())
+            $:feedform.render_css()
+        </form>
       </div>
       $for flash in flashes():
         $if loop.first:

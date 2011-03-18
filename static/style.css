@@ -33,6 +33,7 @@ input[type="password"] {
     background: white;
     border: 1px solid #BFE6E2;
     padding: 2px;
+    margin:0 2px;
     font-family: 'Trebuchet MS', sans-serif;
     font-size: 14px;
     -moz-border-radius: 2px;
@@ -44,6 +45,7 @@ a.internal-link, button {
     background: #105751;
     border: 1px solid #073B36;
     padding: 1px 3px;
+    margin:0 2px;
     font-family: 'Trebuchet MS', sans-serif;
     font-size: 14px;
     font-weight: bold;
@@ -53,7 +55,7 @@ a.internal-link, button {
 }
 
 form.login-menu { float:right; margin-left:4px }
-form.inline-form { display:inline }
+form.inline-form,form.inline-with-labels { display:inline }
 form.inline-form label { display:none }
 from td { text-align:left; vertical-align:top }
 form th { text-align:right; vertical-align:top }
@@ -86,7 +88,7 @@ div.navigation {
     position:fixed;
     z-index:23;
     top:0;
-    background: #6eccc4;
+    background: #f0f0f0;
     padding: 4px 10px;
     background: 
     border: 1px solid #6eccc4;
@@ -137,6 +139,7 @@ div.page ul.messages {
     padding: 4px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
+    min-height:30px;
 }
 
 #loading-list {
@@ -151,7 +154,7 @@ div.page ul.messages {
     top:2px;
     left:2px;
     width:140px;
-    background:#CCC;
+    background:#F0F0F0;
     min-height:30px;
     border: 1px solid #888;
     -moz-border-radius: 5px;
@@ -163,9 +166,10 @@ div.page ul.messages th, div.page ul.messages td {
     vertical-align:top;
 }
 
-div.page ul.messages li {
+div.page ul.messages li.feed-entry {
     position:relative; /* enable input.toggler position:absolute trickery */
     margin: 10px 0;
+    clear: both;
     padding: 10px 5px 5px;
     background: white;
     border: 1px solid #7f7f7f;
@@ -177,6 +181,7 @@ div.page ul.messages li {
     position:relative; /* enable input.toggler position:absolute trickery */
     margin: 5px 0;
     padding: 5px;
+    overflow: hidden;
     background: white;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;

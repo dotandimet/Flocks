@@ -346,17 +346,23 @@ global_account = Sam(global_db,LOGIN_TIMEOUT_SECONDS)
 ### Template forms
 login_form = web.form.Form(
     web.form.Hidden('csrf_token'),
-    web.form.Password("password",description="Password",tabindex=1,class_='focusme'),
+    web.form.Password("password",description="Password",tabindex=2), # tabindex after feed form
     web.form.Button('Login'))
 
 logout_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Button('Logout'))
 
+feed_form = web.form.Form(
+    web.form.Hidden('csrf_token'),
+    web.form.Textbox('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed URL',
+        size=42,tabindex=1,class_='focusme'), 
+    web.form.Button('Go')
+)
+
 channel_form = web.form.Form(
     web.form.Hidden('csrf_token'),
-    web.form.Hidden('url'),
-    #web.form.Textbox('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed URL'),
+    web.form.Hidden('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed URL'),
     web.form.Button('Channel')
 )
 
@@ -392,6 +398,7 @@ render_globals = {
     'flashes':pop_flashed_messages,
     'urlquote':quote,
     'login_form':login_form,
+    'feed_form':feed_form,
     'logout_form':logout_form,
     'channel_form':channel_form,
     'channels_form':channels_form,
@@ -490,12 +497,12 @@ class view_logout:
 class view_set_password:
     password_form = web.form.Form(
         web.form.Hidden("csrf_token"),
-        web.form.Password("oldpass",description="Old password",tabindex=1,class_='focusme'),
+        web.form.Password("oldpass",description="Old password",tabindex=100,class_='focusme'),
         web.form.Password("newpass",
             web.form.Validator("must be at least 8 characters",lambda x:len(x)>=8),
-            description="New password",tabindex=2,class_='focusme'),
-        web.form.Password("newagain",description="New password again",tabindex=3),
-        web.form.Button("Update password"),
+            description="New password",tabindex=101,class_='focusme'),
+        web.form.Password("newagain",description="New password again",tabindex=102),
+        web.form.Button("Update password",tabindex=103),
         validators = [
             web.form.Validator("Passwords didn't match.", lambda i: i.newpass == i.newagain)
         ]

@@ -24,7 +24,7 @@ window.populate_from_feed=function(ul,data) {
             'href',entry['link']).html(entry['title']));
         var toggler = $('<input/>').addClass('toggler').attr('type','checkbox');
         if (window.EXPAND_ALL_ENTRIES) {toggler.attr('checked','checked');}
-        var li=$('<li/>').attr('id',entry['id']).append(item_header).append(toggler);
+        var li=$('<li/>').attr('id',entry['id']).addClass('feed-entry').append(item_header).append(toggler);
         li.append($('<div/>').addClass('entry-description').addClass(feed_dir).html(entry['description']));
         li.data('modified',entry['modified']);
         var sameold=ul.find('#'+li.attr('id'));
