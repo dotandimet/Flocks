@@ -20,12 +20,12 @@ window.AJAX_LOADER_HTML =
     '<img alt="loading..." width="16" height="16" src="$homepath/static/ajax-loader.gif">';
 window.BUTTON_HTML = {
 $for f in args.get('feeds',[]):
-    '$f["url"]':unescape('$:f["button_html"]')$(not loop.last and ',' or '')
+    '$:f["url"]':unescape('$:f["button_html"]')$(not loop.last and ',' or '')
 }
 window.fetch_feeds = function() {
     window.abort_all_fetches();
     $for f in args.get('feeds',[]):
-        fetch_from_feed('messages',unescape('$f['title']'),'$f['url']');
+        fetch_from_feed('messages',unescape('$f['title']'),'$:f['url']');
     return false;
 }
 $$(function() {

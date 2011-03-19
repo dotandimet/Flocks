@@ -17,7 +17,6 @@ HTTP_PORT = 6378 # "Nest" on phone keyboard
 import web
 from sys import argv
 argv[1:] = ['127.0.0.1:{0}'.format(HTTP_PORT)] # That's how you set ip:port in web.py ;) 
-from urllib2 import quote
 web.config.debug = DEBUG
 web.config.debug_sql = DEBUG_SQL # This only works for a tweaked version of web.py (see README)
 
@@ -413,6 +412,7 @@ edit_form = web.form.Form(web.form.Hidden('csrf_token'), web.form.Hidden('subjec
 mini_edit_form = web.form.Form(web.form.Hidden('csrf_token'), web.form.Hidden('subject'), web.form.Hidden('verb'))
 
 ### Rendering helpers
+from urllib2 import quote as urlquote
 
 def custom_edit_form(node):
     "returns edit_form with custom menu according to node type and clipboard. Also adds csrf_token"
@@ -432,7 +432,7 @@ def form_errors(form):
 def get_feed_render_info(url,feed_dict=None):
         return dict(get_feed_info(url,feed_dict),
             button_html='<form class="inline-form" method="post" action="{0}">{1}</form>'.format(
-                web.url('/channel'), quote(channel_form({'csrf_token':csrf_token(),'url':url}).render_css())))
+                web.url('/channel'), urlquote(channel_form({'csrf_token':csrf_token(),'url':url}).render_css())))
 
 import jinja2util
 def urlize(s):
@@ -444,7 +444,7 @@ render_globals = {
     'ctx':web.ctx, # handy environment info
     'account':global_account,
     'flashes':pop_flashed_messages,
-    'urlquote':quote,
+    'urlquote':urlquote,
     'login_form':login_form,
     'feed_form':feed_form,
     'logout_form':logout_form,
@@ -468,7 +468,8 @@ from exceptions import Exception
 class view_api_channel:
     def PUT(self):
         web.header('Content-Type', 'application/json')
-        return json.dumps(feed_fetch(web.input().get('url'),JsonDb(global_db,"cache"),JsonDb(global_db,"feed")))
+        url = web.input().get('url')
+        return json.dumps(feed_fetch(url,JsonDb(global_db,"cache"),JsonDb(global_db,"feed")))
     def GET(self): ### temporary
         return self.PUT()
 
@@ -489,6 +490,7 @@ class view_channel:
             for e in form_errors(form):
                 flash(e)
             raise web.seeother('/')
+        print "channel: {0}".format(form.d.url)
         feed_info = get_feed_render_info(form.d.url)
         title = feed_info['title']
         description = urlize(feed_info.get('description',''))
