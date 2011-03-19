@@ -20,12 +20,6 @@ a:focus, a:active { outline: 0 }
 
 .wrong { color:red }
 
-.important {
-    color:#FF0000 !important;
-    font-size:125%;
-    text-shadow: -2px -2px 4px #FFFFFF !important;
-}
-
 .hilite { background:#ffff7f !important }
 
 input[type="text"],
@@ -36,8 +30,8 @@ input[type="password"] {
     margin:0 2px;
     font-family: 'Trebuchet MS', sans-serif;
     font-size: 14px;
-    -moz-border-radius: 2px;
-    -webkit-border-radius: 2px;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
     color: #105751;
 }
 
@@ -52,6 +46,10 @@ a.internal-link, button {
     -moz-border-radius: 2px;
     -webkit-border-radius: 2px;
     color: white !important;
+}
+
+a.internal-link:hover, button:hover {
+    background: #20AEA2;
 }
 
 form.login-menu { float:right; margin-left:4px }
@@ -296,3 +294,9 @@ div.error {
     font-size: 13px;
 }
 
+.important, a.important {
+    font-size:125%;
+    background:#F00 !important;
+    color:#FFF !important;
+    text-shadow: 2px 2px 4px black !important;
+}

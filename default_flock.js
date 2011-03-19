@@ -9,14 +9,10 @@
     "description": "Hebrew newsflashes about Thailand and food by my wife", 
     "title": "\u05de\u05d1\u05d6\u05e7\u05d5\u05df \u05e1\u05d0\u05e0\u05d5\u05e7"
   }, 
-  "feed:http://feeds.feedburner.com/hijinksensue": {
-    "link": "http://hijinksensue.com", 
-    "title": "HijiNKS ENSUE"
-  }, 
-  "feed:http://stackoverflow.com/feeds/tag/flask": {
-    "link": "http://stackoverflow.com/questions/tagged/?tagnames=flask&sort=active", 
-    "description": "Questions and answers with the \"flask\" tag at http://stackoverflow", 
-    "title": "Stack Overflow: Flask"
+  "feed:http://stackoverflow.com/feeds/tag/webpy": {
+    "link": "http://stackoverflow.com/questions/tagged/?tagnames=webpy&sort=active", 
+    "description": "Questions and answers with the \"Webpy\" tag at http://stackoverflow", 
+    "title": "Stack Overflow: Web.py"
   }, 
   "feed:http://friendfeed.com/thedod?format=atom": {
     "link": "http://friendfeed.com/thedod", 
@@ -57,11 +53,6 @@
           {
             "url": "http://feeds.feedburner.com/Gush-shalom-english", 
             "type": "feed"
-          }, 
-          {
-            "url": "http://feeds.huffingtonpost.com/huffingtonpost/LatestNews", 
-            "type": "feed",
-            "mute": true
           }
         ], 
         "type": "flock", 
@@ -98,7 +89,7 @@
                 "type": "feed" 
               }, 
               {
-                "url": "http://stackoverflow.com/feeds/tag/flask", 
+                "url": "http://stackoverflow.com/feeds/tag/webpy", 
                 "type": "feed" 
               }, 
               {
@@ -117,10 +108,6 @@
               }, 
               {
                 "url": "http://www.comics.wombania.com/feed/", 
-                "type": "feed" 
-              }, 
-              {
-                "url": "http://feeds.feedburner.com/hijinksensue", 
                 "type": "feed" 
               }, 
               {
@@ -168,7 +155,7 @@
   }, 
   "feed:http://rss.feedsportal.com/c/266/f/3503/index.rss": {
     "link": "http://www.independent.co.uk/news/world/?service=Rss", 
-    "title": "The Independent - World RSS Feed"
+    "title": "The Independent - World"
   }, 
   "feed:http://www.electricsheepcomix.com/spiders/wp/?feed=rss2": {
     "link": "http://www.electricsheepcomix.com/spiders/wp", 
@@ -217,10 +204,6 @@
   "feed:http://feeds.guardian.co.uk/theguardian/world/rss": {
     "link": "http://www.guardian.co.uk/world", 
     "title": "The Guardian - World"
-  },
-  "feed:http://feeds.huffingtonpost.com/huffingtonpost/LatestNews": {
-    "link": "http://www.huffingtonpost.com/thenewswire/", 
-    "title": "Huffington Post newswire"
   },
   "feed:http://api.flickr.com/services/feeds/groups_pool.gne?id=709202@N21&lang=en-us&format=rss_200": {
     "link": "http://www.flickr.com/groups/allcatsallowed/pool/", 

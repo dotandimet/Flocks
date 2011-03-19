@@ -25,6 +25,7 @@ urls = (
     "/", "view_flock",
     "/channel", "view_channel",
     "/channels", "view_channels",
+    "/edit", "view_edit",
     "/login","view_login",
     "/logout","view_logout",
     "/set_password","view_set_password",
@@ -327,7 +328,6 @@ def import_flock_file(db,filename):
     return imported.get('flock')
 
 def get_root_or_public_flock(db):
-    "At the moment, always returns root flock!!!! Will be fixed soon"
     jdb = JsonDb(db)
     if jdb.has_key('flock'):
         root = jdb['flock']
@@ -338,10 +338,22 @@ def get_root_or_public_flock(db):
         return root
     return subflock(root,'public') or {'type':'flock','title':'No public flock','items':[]}
 
-    
+def save_root_flock(db,flock):
+    JsonDb(db)['flock'] = flock
+
+def get_clipboard():
+    return global_session.get('clipboard',{})
+
+def set_clipboard(node):
+    global_session['clipboard'] = node
 
 ### our single account manager
 global_account = Sam(global_db,LOGIN_TIMEOUT_SECONDS)
+
+### form validators
+from urlparse import urlsplit
+def valid_url(url):
+    return urlsplit(url).scheme in ['http','https']
 
 ### Template forms
 login_form = web.form.Form(
@@ -352,6 +364,19 @@ login_form = web.form.Form(
 logout_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Button('Logout'))
+
+password_form = web.form.Form(
+    web.form.Hidden("csrf_token"),
+    web.form.Password("oldpass",description="Old password",tabindex=100,class_='focusme'),
+    web.form.Password("newpass",
+        web.form.Validator("must be at least 8 characters",lambda x:len(x)>=8),
+        description="New password",tabindex=101,class_='focusme'),
+    web.form.Password("newagain",description="New password again",tabindex=102),
+    web.form.Button("Update password",tabindex=103),
+    validators = [
+        web.form.Validator("Passwords didn't match.", lambda i: i.newpass == i.newagain)
+    ]
+)
 
 feed_form = web.form.Form(
     web.form.Hidden('csrf_token'),
@@ -373,10 +398,33 @@ channels_form = web.form.Form(
     web.form.Button('Channels')
 )
 
-### Validators and other rendering helpers
-from urlparse import urlsplit
-def valid_url(url):
-    return urlsplit(url).scheme in ['http','https']
+EDIT_VERBS_ALWAYS = [ ('copy','Copy'), ('cut','Cut'), ]
+EDIT_VERBS_IF_CLIPBOARD = [ ('paste','Paste after'), ]
+EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD = [ ('prepend','Paste inside'), ]
+EDIT_VERBS_NOT_IN_MENU = [ ('hide','Hide'), ('show','Show'), ]
+
+# Used for validation
+EDIT_VERBS_ALL = EDIT_VERBS_ALWAYS + EDIT_VERBS_IF_CLIPBOARD + EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD + EDIT_VERBS_NOT_IN_MENU
+
+edit_form = web.form.Form(web.form.Hidden('csrf_token'), web.form.Hidden('subject'),
+    web.form.Dropdown('verb',args=EDIT_VERBS_ALL,value='copy'),
+    web.form.Button('Do'))
+
+mini_edit_form = web.form.Form(web.form.Hidden('csrf_token'), web.form.Hidden('subject'), web.form.Hidden('verb'))
+
+### Rendering helpers
+
+def custom_edit_form(node):
+    "returns edit_form with custom menu according to node type and clipboard. Also adds csrf_token"
+    form = edit_form()
+    form.fill(csrf_token=csrf_token())
+    menu = EDIT_VERBS_ALWAYS
+    if get_clipboard():
+        menu += EDIT_VERBS_IF_CLIPBOARD
+        if node.get('type') == 'flock':
+            menu += EDIT_VERBS_FOR_FLOCKS_IF_CLIPBOARD
+    form.inputs[2].args = menu
+    return form
 
 def form_errors(form):
     return ['{0}: {1}'.format(i.description,i.note) for i in form.inputs if i.note]
@@ -402,6 +450,8 @@ render_globals = {
     'logout_form':logout_form,
     'channel_form':channel_form,
     'channels_form':channels_form,
+    'edit_form':edit_form,
+    'mini_edit_form':mini_edit_form,
     'csrf_token':csrf_token # to enable csrf_token() hidden fields
 }
 
@@ -469,6 +519,37 @@ class view_channels:
             'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':False,
             'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
+class view_edit:
+    @csrf_protected
+    def POST(self):
+        if not global_account.is_logged_in():
+            flash("You're not logged in. You can't {0}.").format(web.input.get('verb','modify information'))
+            raise web.seeother('/')
+        form=edit_form()
+        if not form.validates():
+            for e in form_errors(form):
+                flash(e)
+            raise web.seeother('/')
+        root = get_root_or_public_flock(global_db) # Won't be public. We're logged in.
+        if form.d.subject:
+            node = flock_get(root,form.d.subject.split('_'))
+        else:
+            node = root
+        if not node:
+            flash('Item not found. This can happen when you logout, edit your flock, etc.')
+            raise web.seeother('/')
+        if form.d.verb == 'hide':
+            node['mute']=True
+            save_root_flock(global_db,root)
+            flash('Marked {0} as hidden'.format(node['type']))
+        elif form.d.verb == 'show':
+            node['mute']=False
+            save_root_flock(global_db,root)
+            flash('Marked {0} as visible'.format(node['type']))
+        else:
+            flash('Bug: unknown verb {0}'.format(form.d.verb))
+        raise web.seeother('/')
+
 class view_login:
     def GET(self):
         if global_account.is_new(): # can't login to an empty nest
@@ -495,23 +576,11 @@ class view_logout:
         raise web.seeother('/')
 
 class view_set_password:
-    password_form = web.form.Form(
-        web.form.Hidden("csrf_token"),
-        web.form.Password("oldpass",description="Old password",tabindex=100,class_='focusme'),
-        web.form.Password("newpass",
-            web.form.Validator("must be at least 8 characters",lambda x:len(x)>=8),
-            description="New password",tabindex=101,class_='focusme'),
-        web.form.Password("newagain",description="New password again",tabindex=102),
-        web.form.Button("Update password",tabindex=103),
-        validators = [
-            web.form.Validator("Passwords didn't match.", lambda i: i.newpass == i.newagain)
-        ]
-    )
     def GET(self):
         if not (global_account.is_logged_in() or global_account.is_new()):
             flash("You're not logged in. Can't change your password.")
             raise web.seeother('/')
-        form = self.password_form()
+        form = password_form()
         form.fill(csrf_token=csrf_token(),oldpass='',newpass='',newagain='')
         if global_account.is_new():
             # Hide oldpass field
@@ -520,7 +589,7 @@ class view_set_password:
         return render.set_password({'form':form})
     @csrf_protected
     def POST(self):
-        form=self.password_form()
+        form=password_form()
         if form.validates():
             if global_account.change_password(form.d.oldpass,form.d.newpass):
                 flash("Your password was saved.")
