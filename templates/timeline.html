@@ -15,7 +15,7 @@ $if args.has_key('feed_url'):
       <span class="feed-reference">
         <label for="feed-url">Feed:</label>
         <input id="feed-url" readonly=readonly value="$args['feed_url']">
-        $if args.get('not_in_flock'):
+        $if account.is_logged_in() and args.get('not_in_flock'):
           <form class=inline-form method=post action="$homepath/">
             $:mini_edit_form({'csrf_token':csrf_token(),'verb':'addfeed','subject':args['feed_url']}).render_css()
             <button>Add to flock</button>

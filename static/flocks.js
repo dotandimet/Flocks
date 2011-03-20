@@ -7,7 +7,7 @@ window.tweak_content=function() {
 }
 $(function() {
     $.manageAjax.create('flocks',{queue:true}); 
-    $('.flashes li').prepend($('<button/>').text('X').attr('href','#').click(function() {
+    $('.flashes li').prepend($('<button/>').addClass('important').text('X').click(function() {
         $(this).parent().slideUp(1000).remove(); return false;})).css('opacity',.9);
     window.tweak_content();
     $('.focusme:first').focus();

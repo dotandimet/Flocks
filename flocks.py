@@ -25,6 +25,7 @@ urls = (
     "/", "view_index",
     "/channel", "view_channel",
     "/channels", "view_channels",
+    "/newflock", "view_newflock",
     "/login","view_login",
     "/logout","view_logout",
     "/set_password","view_set_password",
@@ -356,8 +357,8 @@ def valid_url(url):
 ### Template forms
 login_form = web.form.Form(
     web.form.Hidden('csrf_token'),
-    web.form.Password("password",description="Password",tabindex=2), # tabindex after feed form
-    web.form.Button('Login'))
+    web.form.Password("password",description="Password",tabindex=2,class_='focusme'), # tabindex after feed form
+    web.form.Button('Login',tabindex=3))
 
 logout_form = web.form.Form(
     web.form.Hidden('csrf_token'),
@@ -379,7 +380,7 @@ password_form = web.form.Form(
 feed_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Textbox('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed URL',
-        size=42,tabindex=1,class_='focusme'), 
+        size=23,tabindex=1,class_='focusme'), 
     web.form.Button('Go')
 )
 
@@ -396,15 +397,26 @@ channels_form = web.form.Form(
     web.form.Button('Go')
 )
 
+edit_flock_form = web.form.Form(
+    web.form.Hidden('csrf_token'),
+    web.form.Hidden('flock'),
+    web.form.Textbox('title',web.form.notnull,description='Flock name', size=23, tabindex=100,class_='focusme'),
+    web.form.Textbox('description',description='Optional description',size=80,tabindex=101,value=''),
+    web.form.Button('Add flock',tabindex=103)
+)
 
+# Edit form menu items
 EDIT_VERBS_ALWAYS = [ ('copy','Copy'), ]
 EDIT_VERBS_UNLESS_ROOT = [ ('cut','Cut'), ]
-EDIT_VERBS_IF_CLIPBOARD = [ ('paste','Paste after'), ]
+EDIT_VERBS_IF_CLIPBOARD_UNLESS_ROOT = [ ('paste','Paste after'), ]
 EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD = [ ('prepend','Paste inside'), ]
-EDIT_VERBS_NOT_IN_MENU = [ ('hide','Hide'), ('show','Show'), ('clearcb','Clear'), ]
+# These verbs are here for form validation only
+EDIT_VERBS_NOT_IN_MENU = [ ('hide','Hide'), ('show','Show'),
+    ('clearcb','Clear'), ('addfeed', 'Add feed'), ('addflock', 'Add Flock') ]
 
 # Used for validation
-EDIT_VERBS_ALL = deepcopy(EDIT_VERBS_ALWAYS) + deepcopy(EDIT_VERBS_UNLESS_ROOT) + deepcopy(EDIT_VERBS_IF_CLIPBOARD)
+EDIT_VERBS_ALL = deepcopy(EDIT_VERBS_ALWAYS) + deepcopy(EDIT_VERBS_UNLESS_ROOT)
+EDIT_VERBS_ALL += deepcopy(EDIT_VERBS_IF_CLIPBOARD_UNLESS_ROOT)
 EDIT_VERBS_ALL += deepcopy(EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD) + deepcopy(EDIT_VERBS_NOT_IN_MENU)
 
 edit_form = web.form.Form(web.form.Hidden('csrf_token'), web.form.Hidden('subject'),
@@ -423,10 +435,10 @@ def custom_edit_form(node):
     menu = deepcopy(EDIT_VERBS_ALWAYS)
     if node.get('cache_slug'):
         menu += deepcopy(EDIT_VERBS_UNLESS_ROOT)
-    if get_clipboard():
-        menu += deepcopy(EDIT_VERBS_IF_CLIPBOARD)
-        if node.get('type') == 'flock':
-            menu += deepcopy(EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD)
+        if get_clipboard():
+            menu += deepcopy(EDIT_VERBS_IF_CLIPBOARD_UNLESS_ROOT)
+    if get_clipboard() and node.get('type') == 'flock':
+        menu += deepcopy(EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD)
     form.inputs[2].args = menu
     return form
 
@@ -490,7 +502,7 @@ class view_index:
     @csrf_protected
     def POST(self):
         if not global_account.is_logged_in():
-            flash("You're not logged in. You can't {0}.").format(web.input.get('verb','modify information'))
+            flash("You're not logged in. You can't {0}.".format(web.input().get('verb','modify information')))
             raise web.seeother('/')
         form=edit_form()
         if not form.validates():
@@ -630,6 +642,21 @@ class view_channels:
             'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':False,'hide_feed':False,
             'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
+class view_newflock:
+    def GET(self):
+        form = edit_flock_form()
+        form.fill(csrf_token=csrf_token())
+        return render.newflock({'form':form})
+    @csrf_protected
+    def POST(self):
+        form = edit_flock_form()
+        if form.validates():
+            set_clipboard({'type':'flock','title':form.d.title,'description':form.d.description,'items':[]})
+            flash('Your new flock is now in the clipboard.')
+            return web.seeother('/')
+        else:
+            form.fill(csrf_token=csrf_token())
+            return render.newflock({'form':form})
 
 class view_login:
     def GET(self):
