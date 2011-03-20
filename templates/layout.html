@@ -12,6 +12,12 @@ $ homepath = ctx.homepath
   </head>
   <body>
     <div class=page>
+      $for flash in flashes():
+        $if loop.first:
+          <ul class=flashes>
+        <li>$flash</li>
+        $if loop.last:
+          </ul>
       <h1>$:rendered.get('title')</h1>
       $ description = rendered.get('description','')
       $if description:
@@ -39,13 +45,6 @@ $ homepath = ctx.homepath
             $:feedform.render_css()
         </form>
       </div>
-      $for flash in flashes():
-        $if loop.first:
-          <ul class=flashes>
-        <li>$flash</li>
-        $if loop.last:
-          </ul>
- 
       <div class=body>
       $:rendered
       </div>

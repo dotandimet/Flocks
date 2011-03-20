@@ -2,6 +2,17 @@ $def with (args)
 $ flock = args['flock']
 $var title: ${'Flock: '+flock.get('title','(untitled flock)')}
 $var description: ${flock.get('description','')}
+$if args.get('scrollto'):
+  <script type='text/javascript'>
+    window.SCROLLTO="$args['scrollto']";
+  </script>
+$if account.is_logged_in() and args.get('clipboard'):
+  $ clearbutton = mini_edit_form({'csrf_token':csrf_token(),'verb':'clearcb'}).render_css()
+  <h3 id="clipboard">Clipboard <form class=inline-form method=post action=''>$:clearbutton <button>Clear</button></form></h3>
+  <ul class="flock clipboard">
+    <li>$:args['clipboard']</li>
+  </ul>
+  <h3 id="flock">Flock</h3>
 <ul class="flock">
   <li>$:args.get('rendered')</li>
 </ul>

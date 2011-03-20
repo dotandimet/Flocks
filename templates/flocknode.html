@@ -5,16 +5,20 @@ $ homepath = ctx.homepath
 $if node['type'] == 'flock':
   <span class=toggler-label id=${node['cache_slug'] or 'f-root'}>
     $if account.is_logged_in():
-        <form class=inline-form method=post action='$homepath/edit'>
-          $if node.get('mute'):
-              $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'show'}).render_css()
-              <button type="submit">Show</button>
-          $else:
-              $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'hide'}).render_css()
-              <button type="submit">Hide</button>
-        </form>
+      <form class='inline-form noborder' method=post action=''>
+        $if node.get('mute'):
+            $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'show'}).render_css()
+            <button type="submit">Show</button>
+        $else:
+            $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'hide'}).render_css()
+            <button type="submit">Hide</button>
+      </form>
     <span class="node-title$extra_css">$node['title']</span>
-    <form class='inline-form' method=post action="$homepath/channels">
+    $if account.is_logged_in():
+      <form class=inline-form method=post action=''>
+        $:custom_edit_form(node).render_css()
+      </form>
+    <form class=inline-form method=post action="$homepath/channels">
       $:channels_form({'csrf_token':csrf_token(),'flock':node['cache_slug']}).render_css()
     </form>
   </span>
@@ -28,16 +32,20 @@ $if node['type'] == 'flock':
 $else:
   <span id=$node['cache_slug']>
     $if account.is_logged_in():
-        <form class=inline-form method=post action='$homepath/edit'>
-          $if node.get('mute'):
-              $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'show'}).render_css()
-              <button type="submit">Show</button>
-          $else:
-              $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'hide'}).render_css()
-              <button type="submit">Hide</button>
-        </form>
+      <form class='inline-form noborder' method=post action=''>
+        $if node.get('mute'):
+            $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'show'}).render_css()
+            <button type="submit">Show</button>
+        $else:
+            $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'hide'}).render_css()
+            <button type="submit">Hide</button>
+      </form>
     <span class="node-title$extra_css">$node['cache_title']</span>
-    <form class='inline-form' method=post action="$homepath/channel">
+    $if account.is_logged_in():
+      <form class=inline-form method=post action=''>
+        $:custom_edit_form(node).render_css()
+      </form>
+    <form class=inline-form method=post action="$homepath/channel">
       $:channel_form({'csrf_token':csrf_token(),'url':node['url']}).render_css()
     </form>
   </span>

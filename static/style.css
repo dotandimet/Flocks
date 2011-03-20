@@ -32,11 +32,11 @@ input[type="password"] {
     font-size: 14px;
     -moz-border-radius: 3px;
     -webkit-border-radius: 3px;
-    color: #105751;
+    color: #105157;
 }
 
 a.internal-link, button {
-    background: #105751;
+    background: #105157;
     border: 1px solid #073B36;
     padding: 1px 3px;
     margin:0 2px;
@@ -48,25 +48,33 @@ a.internal-link, button {
     color: white !important;
 }
 
+button { font-family: Courier New }
+
 a.internal-link:hover, button:hover {
-    background: #20AEA2;
+    background: #20A2AE;
 }
 
-form.login-menu { float:right; margin-left:4px }
-form.inline-form,form.inline-with-labels { display:inline }
+
+form.login-menu { float:right; margin-left:4px; line-height:36px }
+form.inline-form,form.inline-with-labels { display:inline; line-height:36px }
+form.inline-form { padding-left:4px; border-left: groove 2px; }
+.rtl form.inline-form { padding-right:4px; border-right: groove 2px; border-left:none }
+.node-title, .entry-title { padding:0 4px; font-weight:bold; border-left: groove 2px }
+.rtl .node-title, .rtl .entry-title { border-right: groove 2px; border-left:none }
+.noborder { border:none !important }
 form.inline-form label { display:none }
 from td { text-align:left; vertical-align:top }
 form th { text-align:right; vertical-align:top }
 
 div.page {
     background: white;
-    border: 1px solid #6ECCC4;
+    border: 1px solid #6EC4CC;
     width: 700px;
     margin: 50px auto;
 }
 
 div.page h1 {
-    background: #6ECCC4;
+    background: #6EC4CC;
     margin: 0;
     padding: 10px 14px 4px;
     color: white;
@@ -76,7 +84,7 @@ div.page h1 {
 }
 
 div.page-description {
-    background: #6ECCC4;
+    background: #6EC4CC;
     padding: 0 14px 8px;
     font-weight: bold;
     text-shadow: 0 0 2px #ffffff;
@@ -107,7 +115,7 @@ div.navigation a {
 
 div.page h2 {
     margin: 0;
-    color: #105751;
+    color: #105157;
     text-shadow: 0 1px 2px #ccc;
 }
 
@@ -203,7 +211,12 @@ div.page ul.flock li {
 }
 
 .mute .node-title { background:#CFCFCF; padding:1px 4px }
-span.mute { background:#AFAFAF; padding:1px 4px }
+.node-title.mute { background:#AFAFAF; padding:1px 4px }
+
+div.page ul.clipboard {
+    background: white;
+    border: solid black 1px;
+}
 
 div.page .toggler-label {
     background: #D0DAF9;
@@ -216,10 +229,10 @@ div.page .toggler-label {
 /* expand/collapse toggler checkbox. Inspired by http://www.thecssninja.com/css/css-tree-menu */
 input.toggler {
     position:absolute;
-    top:12px; left:6px;
+    top:17px; left:6px;
 }
 
-ul.messages input.toggler { top:22px }
+ul.messages input.toggler { top:28px }
 
 span.toggler-label {
     padding-left:20px
@@ -252,7 +265,7 @@ div.page ul.messages li small, .item-time {
 div.item-time {
     direction:ltr !important;
     float:right;
-    margin:5px;
+    margin:11px 5px;
 }
 
 .site-reference, .feed-reference {
@@ -272,16 +285,20 @@ a.site-reference, a.feed-reference {
 }
 
 ul.flashes {
+    position:fixed;
+    top:50px;
+    z-index:23;
+    margin:0 auto;
     list-style: none;
-    margin: 10px 10px 0 10px;
     padding: 0;
 }
 
 ul.flashes li {
-    background: #B9F3ED;
+    background: #FFC;
     border: 1px solid #81CEC6;
-    -moz-border-radius: 2px;
-    -webkit-border-radius: 2px;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    margin-top:4px;
     padding: 4px;
     font-size: 13px;
 }

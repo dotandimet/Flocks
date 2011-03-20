@@ -14,6 +14,7 @@ MAX_FLOCK_FEED_ENTRIES = 10
 HTTP_PORT = 6378 # "Nest" on phone keyboard
 ###
 
+from copy import deepcopy
 import web
 from sys import argv
 argv[1:] = ['127.0.0.1:{0}'.format(HTTP_PORT)] # That's how you set ip:port in web.py ;) 
@@ -21,10 +22,9 @@ web.config.debug = DEBUG
 web.config.debug_sql = DEBUG_SQL # This only works for a tweaked version of web.py (see README)
 
 urls = (
-    "/", "view_flock",
+    "/", "view_index",
     "/channel", "view_channel",
     "/channels", "view_channels",
-    "/edit", "view_edit",
     "/login","view_login",
     "/logout","view_logout",
     "/set_password","view_set_password",
@@ -204,7 +204,7 @@ Methods:
     
 ### Flock functions
 def flockslug(obj):
-    "Receives a name string or a flock node (dict). Returns an html-safe slug. Case insensitive."
+    "Receives a name string for a flock node (dict). Returns an html-safe slug. Case insensitive."
     if type(obj) == type({}):
         obj = obj.get('url',obj.get('title'))
     return 'f%d' % hash(obj.lower())
@@ -224,16 +224,16 @@ def subflock(flock,name):
     "Flat get by name"
     return flock_get(flock,[flockslug(name)])
 
-def get_flock_feeds(flock,respect_mutes=False):
+def get_flock_feeds(flock,respect_mutes=False,veteran=False):
     "Get all urls of feeds (leafs) in a flock tree. If respect_mutes, ignores mute feeds"
     feeds=set()
-    if respect_mutes and flock.get('mute'):
+    if veteran and respect_mutes and flock.get('mute'):
         return feeds
     flocktype=flock.get('type')
     if flocktype=='feed':
         feeds.add(flock.get('url'))
     elif flocktype=='flock':
-        feeds = feeds.union(*[get_flock_feeds(i,respect_mutes) for i in flock.get('items',[])])
+        feeds = feeds.union(*[get_flock_feeds(i,respect_mutes,True) for i in flock.get('items',[])])
     else:
         raise ValueError,'bad flock type %s for %s' % (`flocktype`,flock)
     return feeds
@@ -298,7 +298,7 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
             'expires':datetime2str(now()+seconds2delta(FEED_CACHE_TIMEOUT)),
             'modified':feed_modified,
             'etag':etag,
-            'entries':[{'id':'i{0}'.format(hash((url,e.updated_parsed))),'title':e.title, 'link':e.link,
+            'entries':[{'id':'i{0}'.format(hash((url,e.updated_parsed))),'title':e.title.strip() or '(untitled)', 'link':e.link,
                         'description':e.description, 'modified':timestruct2str(e.updated_parsed),
                         'friendly_time':timestruct2friendly(e.updated_parsed),
                         # add feed info in case we put the entry in a multi-channel timeline
@@ -318,7 +318,6 @@ def import_feeds(feed_dict,import_dict):
             url = k[len('feed:'):]
             feed = feed_dict.get(url,{})
             feed_update(feed,import_dict[k])
-            print "{0}: {1}".format(k,import_dict[k])
             feed_dict[url] = feed
 
 def import_flock_file(db,filename):
@@ -341,10 +340,10 @@ def save_root_flock(db,flock):
     JsonDb(db)['flock'] = flock
 
 def get_clipboard():
-    return global_session.get('clipboard',{})
+    return deepcopy(global_session.get('clipboard',{}))
 
 def set_clipboard(node):
-    global_session['clipboard'] = node
+    global_session['clipboard'] = deepcopy(node)
 
 ### our single account manager
 global_account = Sam(global_db,LOGIN_TIMEOUT_SECONDS)
@@ -387,23 +386,26 @@ feed_form = web.form.Form(
 channel_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Hidden('url',web.form.Validator("Bad or missing url.",valid_url),description='Feed URL'),
-    web.form.Button('Channel')
+    web.form.Button('Go')
 )
 
 channels_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Hidden('flock'),
     web.form.Dropdown('all',args=[('','skip hidden'),('yes','show hidden')],value='',description='All feeds?'),
-    web.form.Button('Channels')
+    web.form.Button('Go')
 )
 
-EDIT_VERBS_ALWAYS = [ ('copy','Copy'), ('cut','Cut'), ]
+
+EDIT_VERBS_ALWAYS = [ ('copy','Copy'), ]
+EDIT_VERBS_UNLESS_ROOT = [ ('cut','Cut'), ]
 EDIT_VERBS_IF_CLIPBOARD = [ ('paste','Paste after'), ]
 EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD = [ ('prepend','Paste inside'), ]
-EDIT_VERBS_NOT_IN_MENU = [ ('hide','Hide'), ('show','Show'), ]
+EDIT_VERBS_NOT_IN_MENU = [ ('hide','Hide'), ('show','Show'), ('clearcb','Clear'), ]
 
 # Used for validation
-EDIT_VERBS_ALL = EDIT_VERBS_ALWAYS + EDIT_VERBS_IF_CLIPBOARD + EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD + EDIT_VERBS_NOT_IN_MENU
+EDIT_VERBS_ALL = deepcopy(EDIT_VERBS_ALWAYS) + deepcopy(EDIT_VERBS_UNLESS_ROOT) + deepcopy(EDIT_VERBS_IF_CLIPBOARD)
+EDIT_VERBS_ALL += deepcopy(EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD) + deepcopy(EDIT_VERBS_NOT_IN_MENU)
 
 edit_form = web.form.Form(web.form.Hidden('csrf_token'), web.form.Hidden('subject'),
     web.form.Dropdown('verb',args=EDIT_VERBS_ALL,value='copy'),
@@ -417,12 +419,14 @@ from urllib2 import quote as urlquote
 def custom_edit_form(node):
     "returns edit_form with custom menu according to node type and clipboard. Also adds csrf_token"
     form = edit_form()
-    form.fill(csrf_token=csrf_token())
-    menu = EDIT_VERBS_ALWAYS
+    form.fill(csrf_token=csrf_token(),subject=node.get('cache_slug',''))
+    menu = deepcopy(EDIT_VERBS_ALWAYS)
+    if node.get('cache_slug'):
+        menu += deepcopy(EDIT_VERBS_UNLESS_ROOT)
     if get_clipboard():
-        menu += EDIT_VERBS_IF_CLIPBOARD
+        menu += deepcopy(EDIT_VERBS_IF_CLIPBOARD)
         if node.get('type') == 'flock':
-            menu += EDIT_VERBS_FOR_FLOCKS_IF_CLIPBOARD
+            menu += deepcopy(EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD)
     form.inputs[2].args = menu
     return form
 
@@ -431,7 +435,7 @@ def form_errors(form):
 
 def get_feed_render_info(url,feed_dict=None):
         return dict(get_feed_info(url,feed_dict),
-            button_html='<form class="inline-form" method="post" action="{0}">{1}</form>'.format(
+            button_html='<form class="inline-form noborder" method="post" action="{0}">{1}</form>'.format(
                 web.url('/channel'), urlquote(channel_form({'csrf_token':csrf_token(),'url':url}).render_css())))
 
 import jinja2util
@@ -450,7 +454,7 @@ render_globals = {
     'logout_form':logout_form,
     'channel_form':channel_form,
     'channels_form':channels_form,
-    'edit_form':edit_form,
+    'custom_edit_form':custom_edit_form,
     'mini_edit_form':mini_edit_form,
     'csrf_token':csrf_token # to enable csrf_token() hidden fields
 }
@@ -474,10 +478,105 @@ class view_api_channel:
         return self.PUT()
 
 ### Views
-class view_flock:
+class view_index:
     def GET(self):
-        flock = flock_cachify(get_root_or_public_flock(global_db),feed_dict=JsonDb(global_db,"feed"))
-        return render.index({'flock':flock,'rendered':flock_render(flock,baseless_render.flocknode)})
+        feed_dict=JsonDb(global_db,"feed")
+        flock = flock_cachify(get_root_or_public_flock(global_db),feed_dict)
+        rendered = flock_render(flock,baseless_render.flocknode)
+        cb = get_clipboard()
+        cb = cb and flock_render(flock_cachify(cb,feed_dict),baseless_render.clipboardnode)
+        return render.index({
+            'flock':flock,'rendered':rendered,'clipboard':cb})
+    @csrf_protected
+    def POST(self):
+        if not global_account.is_logged_in():
+            flash("You're not logged in. You can't {0}.").format(web.input.get('verb','modify information'))
+            raise web.seeother('/')
+        form=edit_form()
+        if not form.validates():
+            for e in form_errors(form):
+                flash(e)
+            raise web.seeother('/')
+        root = get_root_or_public_flock(global_db)
+        scrollto = form.d.subject
+        feed_dict=JsonDb(global_db,"feed")
+        if form.d.subject:
+            slugpath = form.d.subject.split('_')
+            node = flock_get(root,slugpath)
+        else:
+            slugpath = '[]'
+            node = root
+            scrollto = 'f-root'
+        if not node:
+            flash('Item not found. This can happen when you logout, edit your flock, etc.')
+            raise web.seeother('/')
+        ### Do the verb
+        if form.d.verb == 'hide': # Verb: Hide
+            node['mute']=True
+            save_root_flock(global_db,root)
+            flash('Marked {0} as hidden'.format(node['type']))
+        elif form.d.verb == 'show': # Verb: Show
+            node['mute']=False
+            save_root_flock(global_db,root)
+            flash('Marked {0} as visible'.format(node['type']))
+        elif form.d.verb == 'copy': # Verb: Copy
+            set_clipboard(node)
+            scrollto = None
+            flash('Copied {0} to clipboard'.format(node['type']))
+        elif form.d.verb == 'cut': # Verb: Cut
+            if not slugpath:
+                flash("can't cut root flock.")
+            else:
+                parent = flock_get(root,slugpath[:-1])
+                if not parent:
+                    flash("Item not found (logout, rename, etc.). Please try again.")
+                else:
+                    set_clipboard(node)
+                    flash('Moved {0} to clipboard'.format(node['type']))
+                    parent['items'].remove(node)
+                    save_root_flock(global_db,root)
+                    scrollto = None
+        elif form.d.verb == 'clearcb': # Verb: Clear
+            set_clipboard(None)
+            scrollto = None
+            flash('Clipboard was cleared.')
+        elif form.d.verb == 'paste': # Verb: Paste after
+            if not slugpath:
+                flash("can't paste after root flock")
+            cb = flock_cachify(get_clipboard(),feed_dict)
+            if not cb:
+                flash("Can't paste from empty clipboard")
+            else:
+                parent = flock_get(root,slugpath[:-1])
+                if not parent:
+                    flash("Item not found (logout, rename, etc.). Please try again.")
+                elif subflock(parent,cb.get('url',cb.get('title'))):
+                    flash("Can't paste duplicate item.")
+                else:
+                    parent['items'].insert(1+parent['items'].index(node),cb)
+                    save_root_flock(global_db,root)
+                    flash("Pasted.")
+        elif form.d.verb == 'prepend': # Verb: Paste inside
+            cb = flock_cachify(get_clipboard(),feed_dict)
+            if not cb:
+                flash("Can't paste from empty clipboard")
+            elif node.get('type')!='flock':
+                flash("Can't paste inside a single food.")
+            elif subflock(node,cb.get('url',cb.get('title'))):
+                flash("Can't paste duplicate item.")
+            else:
+                node['items'].insert(0,cb)
+                save_root_flock(global_db,root)
+                flash("Pasted.")
+        else: # Unknown verb
+            flash('Bug: unknown verb {0}'.format(form.d.verb))
+            raise web.seeother('/')
+        flock_cachify(root,feed_dict)
+        rendered = flock_render(root,baseless_render.flocknode)
+        cb = get_clipboard()
+        cb = cb and flock_render(flock_cachify(cb,feed_dict),baseless_render.clipboardnode)
+        return render.index({
+            'flock':root,'rendered':rendered,'clipboard':cb,'scrollto':scrollto})
 
 class view_channel:
     def GET(self):
@@ -490,7 +589,6 @@ class view_channel:
             for e in form_errors(form):
                 flash(e)
             raise web.seeother('/')
-        print "channel: {0}".format(form.d.url)
         feed_info = get_feed_render_info(form.d.url)
         title = feed_info['title']
         description = urlize(feed_info.get('description',''))
@@ -521,36 +619,6 @@ class view_channels:
             'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':False,
             'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
-class view_edit:
-    @csrf_protected
-    def POST(self):
-        if not global_account.is_logged_in():
-            flash("You're not logged in. You can't {0}.").format(web.input.get('verb','modify information'))
-            raise web.seeother('/')
-        form=edit_form()
-        if not form.validates():
-            for e in form_errors(form):
-                flash(e)
-            raise web.seeother('/')
-        root = get_root_or_public_flock(global_db) # Won't be public. We're logged in.
-        if form.d.subject:
-            node = flock_get(root,form.d.subject.split('_'))
-        else:
-            node = root
-        if not node:
-            flash('Item not found. This can happen when you logout, edit your flock, etc.')
-            raise web.seeother('/')
-        if form.d.verb == 'hide':
-            node['mute']=True
-            save_root_flock(global_db,root)
-            flash('Marked {0} as hidden'.format(node['type']))
-        elif form.d.verb == 'show':
-            node['mute']=False
-            save_root_flock(global_db,root)
-            flash('Marked {0} as visible'.format(node['type']))
-        else:
-            flash('Bug: unknown verb {0}'.format(form.d.verb))
-        raise web.seeother('/')
 
 class view_login:
     def GET(self):
