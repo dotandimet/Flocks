@@ -2,12 +2,27 @@ $def with (args)
 $var title: $args.get('title','(untitled)')
 $var description: $:{args.get('description','')}
 $ homepath = ctx.homepath
+$ extra_css = args.get('hide_feed') and ' hide-feed' or ''
 <div id="loading-div">
   <a href="#" id="refresh" class="internal-link">Refresh now</a>
   <ul id="loading-list">
   </ul>
 </div>
-<ul class=messages id=messages>
+$if args.has_key('feed_url'):
+    <div class="feed-details">
+      $if args.has_key('site_url'):
+        <a class="site-reference" href="$args['site_url']">Site</a>,
+      <span class="feed-reference">
+        <label for="feed-url">Feed:</label>
+        <input id="feed-url" readonly=readonly value="$args['feed_url']">
+        $if args.get('not_in_flock'):
+          <form class=inline-form method=post action="$homepath/">
+            $:mini_edit_form({'csrf_token':csrf_token(),'verb':'addfeed','subject':args['feed_url']}).render_css()
+            <button>Add to flock</button>
+          </form>
+      </span>
+    </div>
+<ul class='messages$extra_css' id=messages>
 </ul>
 <script type=text/javascript>
 window.MAX_PAGE_ENTRIES = ${args.get('max_page_entries',5)};

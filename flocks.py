@@ -500,16 +500,19 @@ class view_index:
         root = get_root_or_public_flock(global_db)
         scrollto = form.d.subject
         feed_dict=JsonDb(global_db,"feed")
-        if form.d.subject:
-            slugpath = form.d.subject.split('_')
-            node = flock_get(root,slugpath)
+        if form.d.verb in ['clearcb','addfeed','addflock']: # verbs where subject is not a flock
+            scrollto = None
         else:
-            slugpath = '[]'
-            node = root
-            scrollto = 'f-root'
-        if not node:
-            flash('Item not found. This can happen when you logout, edit your flock, etc.')
-            raise web.seeother('/')
+            if form.d.subject:
+                slugpath = form.d.subject.split('_')
+                node = flock_get(root,slugpath)
+            else:
+                slugpath = '[]'
+                node = root
+                scrollto = 'f-root'
+            if not node:
+                flash('Item not found. This can happen when you logout, edit your flock, etc.')
+                raise web.seeother('/')
         ### Do the verb
         if form.d.verb == 'hide': # Verb: Hide
             node['mute']=True
@@ -521,9 +524,9 @@ class view_index:
             flash('Marked {0} as visible'.format(node['type']))
         elif form.d.verb == 'copy': # Verb: Copy
             set_clipboard(node)
-            scrollto = None
             flash('Copied {0} to clipboard'.format(node['type']))
         elif form.d.verb == 'cut': # Verb: Cut
+            scrollto = None
             if not slugpath:
                 flash("can't cut root flock.")
             else:
@@ -535,11 +538,6 @@ class view_index:
                     flash('Moved {0} to clipboard'.format(node['type']))
                     parent['items'].remove(node)
                     save_root_flock(global_db,root)
-                    scrollto = None
-        elif form.d.verb == 'clearcb': # Verb: Clear
-            set_clipboard(None)
-            scrollto = None
-            flash('Clipboard was cleared.')
         elif form.d.verb == 'paste': # Verb: Paste after
             if not slugpath:
                 flash("can't paste after root flock")
@@ -568,6 +566,15 @@ class view_index:
                 node['items'].insert(0,cb)
                 save_root_flock(global_db,root)
                 flash("Pasted.")
+        elif form.d.verb == 'clearcb': # Verb: Clear
+            set_clipboard(None)
+            flash('Clipboard was cleared.')
+        elif form.d.verb == 'addfeed': # Verb: Add feed
+            if valid_url(form.d.subject):
+                set_clipboard({'type':'feed','url':form.d.subject})
+                flash('Feed was copied to clipboard.')
+            else:
+                flash("Can't add feed. Invalid URL: '{0}").format(form.d.subject)
         else: # Unknown verb
             flash('Bug: unknown verb {0}'.format(form.d.verb))
             raise web.seeother('/')
@@ -592,8 +599,12 @@ class view_channel:
         feed_info = get_feed_render_info(form.d.url)
         title = feed_info['title']
         description = urlize(feed_info.get('description',''))
-        return render.timeline({'title':u'Channel: {0}'.format(title),'description':description,'feeds':[feed_info],
-            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':True,
+        url = feed_info['url']
+        not_in_flock = not (url in get_flock_feeds(get_root_or_public_flock(global_db)))
+        return render.timeline({
+            'title':u'Channel: {0}'.format(title),'description':description,'feeds':[feed_info],
+            'feed_url':url,'site_url':feed_info.get('link'),'not_in_flock':not_in_flock,
+            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':True,'hide_feed':True,
             'max_feed_entries':MAX_SINGLE_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
 class view_channels:
@@ -616,7 +627,7 @@ class view_channels:
         title = flock['title']
         description = urlize(flock.get('description',''))
         return render.timeline({'title':u'Channels: {0}'.format(title),'description':description,'feeds':feeds,
-            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':False,
+            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':False,'hide_feed':False,
             'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
 

@@ -11,6 +11,7 @@ $(function() {
         $(this).parent().slideUp(1000).remove(); return false;})).css('opacity',.9);
     window.tweak_content();
     $('.focusme:first').focus();
+    $('#feed-url').click(function() {$(this).select()});
     if (window.SCROLLTO!=undefined && window.SCROLLTO) {
      	$('html,body').animate({scrollTop: $("#"+window.SCROLLTO).offset().top-60},'slow');
     }
@@ -23,8 +24,8 @@ window.populate_from_feed=function(ul,data) {
         feed_dir=entry['feed_rtl']?'rtl':'ltr';
         var item_header=$('<div/>').addClass('toggler-label').addClass(feed_dir);
         item_header.append($('<div/>').addClass('item-time').text(entry['friendly_time']));
-        item_header.append($('<span/>').addClass('feed-reference').text(entry['feed_title']));
-        item_header.append(window.BUTTON_HTML[entry['feed_url']]);
+        item_header.append($('<span/>').addClass('feed-reference').text(entry['feed_title']).append(
+            window.BUTTON_HTML[entry['feed_url']]));
         item_header.append($('<a/>').addClass('entry-title').attr(
             'href',entry['link']).html(entry['title']));
         var toggler = $('<input/>').addClass('toggler').attr('type','checkbox');

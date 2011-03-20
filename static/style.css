@@ -66,6 +66,9 @@ form.inline-form label { display:none }
 from td { text-align:left; vertical-align:top }
 form th { text-align:right; vertical-align:top }
 
+.hide-feed .entry-title {border:none}
+.hide-feed .feed-reference {display: none}
+
 div.page {
     background: white;
     border: 1px solid #6EC4CC;
@@ -101,7 +104,7 @@ div.navigation {
     font-size: 12px;
     letter-spacing: 0.5px;
     line-height: 24px;
-    width: 680px;
+    width: 678px;
     margin: 0 auto;
     border: 1px solid black;
     -moz-border-radius: 5px;
@@ -128,15 +131,6 @@ div.page div.footer {
     color: #888;
     padding: 5px 10px;
     font-size: 12px;
-}
-
-div.page div.followstatus {
-    border: 1px solid #ccc;
-    background: #E3EBEA;
-    -moz-border-radius: 2px;
-    -webkit-border-radius: 2px;
-    padding: 3px;
-    font-size: 13px;
 }
 
 div.page ul.messages {
@@ -169,7 +163,6 @@ div.page ul.messages {
     -webkit-border-radius: 5px;
 }
 
-/* Makes friendfeed look nicer */
 div.page ul.messages th, div.page ul.messages td {
     vertical-align:top;
 }
@@ -213,15 +206,23 @@ div.page ul.flock li {
 .mute .node-title { background:#CFCFCF; padding:1px 4px }
 .node-title.mute { background:#AFAFAF; padding:1px 4px }
 
-div.page ul.clipboard {
+div.clipboard {
     background: white;
     border: solid black 1px;
+    padding:4px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
 }
+
+div.page div.clipboard ul.flock { background:none }
+
+#clipboard { font-size:1.25em; font-weight:bold }
 
 div.page .toggler-label {
     background: #D0DAF9;
     padding:10px 8px 8px 24px;
     border: none;
+    line-height:36px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
 }
@@ -265,16 +266,16 @@ div.page ul.messages li small, .item-time {
 div.item-time {
     direction:ltr !important;
     float:right;
-    margin:11px 5px;
+    margin:0px 2px;
 }
 
-.site-reference, .feed-reference {
-    font-size: 0.9em;
-}
+div.feed-details { margin-bottom: 4px }
 
-a.site-reference, a.feed-reference {
-    text-decoration: underline;
-}
+.feed-reference { font-size: 0.9em; }
+
+.site-reference { font-size: 1.5em; font-face:bold }
+
+a.site-reference, a.feed-reference { text-decoration: underline; }
 
 .entry-title {
     font-weight:bold

@@ -8,11 +8,12 @@ $if args.get('scrollto'):
   </script>
 $if account.is_logged_in() and args.get('clipboard'):
   $ clearbutton = mini_edit_form({'csrf_token':csrf_token(),'verb':'clearcb'}).render_css()
-  <h3 id="clipboard">Clipboard <form class=inline-form method=post action=''>$:clearbutton <button>Clear</button></form></h3>
-  <ul class="flock clipboard">
-    <li>$:args['clipboard']</li>
-  </ul>
-  <h3 id="flock">Flock</h3>
+  <div class=clipboard>
+    <span id="clipboard">Clipboard <form class=inline-form method=post action=''>$:clearbutton <button>Clear</button></form></span>
+    <ul class="flock">
+      <li>$:args['clipboard']</li>
+    </ul>
+  </div>
 <ul class="flock">
   <li>$:args.get('rendered')</li>
 </ul>
