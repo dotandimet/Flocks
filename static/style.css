@@ -240,6 +240,8 @@ input.toggler {
 
 ul.messages input.toggler { top:28px }
 
+.clipboard input.toggler { top:12px }
+
 .node-details input.toggler { top:8px; left:4px }
 
 span.toggler-label {

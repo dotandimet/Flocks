@@ -6,7 +6,7 @@ $if node['type'] == 'flock':
   <span class=toggler-label>
     <span class="node-title noborder$extra_css">$node['title']</span>
   </span>
-  <input type=checkbox id=${'toggle_' + node['cache_slug']} class=toggler checked=checked>
+  <input type=checkbox id=${'toggle_' + node['cache_slug']} class=toggler>
   <div class="flock-items$extra_css">
     <ul class="flock">
       $for item in args['items']:
