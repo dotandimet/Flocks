@@ -299,7 +299,7 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
             'expires':datetime2str(now()+seconds2delta(FEED_CACHE_TIMEOUT)),
             'modified':feed_modified,
             'etag':etag,
-            'entries':[{'id':'i{0}'.format(hash((url,e.updated_parsed))),'title':e.title.strip() or '(untitled)', 'link':e.link,
+            'entries':[{'id':'i{0}'.format(hash((url,e.link))),'title':e.title.strip() or '(untitled)', 'link':e.link,
                         'description':e.description, 'modified':timestruct2str(e.updated_parsed),
                         'friendly_time':timestruct2friendly(e.updated_parsed),
                         # add feed info in case we put the entry in a multi-channel timeline
@@ -502,7 +502,7 @@ class view_index:
     @csrf_protected
     def POST(self):
         if not global_account.is_logged_in():
-            flash("You're not logged in. You can't {0}.".format(web.input().get('verb','modify information')))
+            flash("You're not logged in. {0} refused.".format(web.input().get('verb','operation')))
             raise web.seeother('/')
         form=edit_form()
         if not form.validates():
