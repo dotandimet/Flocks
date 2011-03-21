@@ -270,7 +270,8 @@ div.page ul.messages li small, .item-time {
 div.item-time {
     direction:ltr !important;
     float:right;
-    margin:0px 2px;
+    margin:-12px 0 0 8px;
+
 }
 
 div.node-details {

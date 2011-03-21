@@ -681,9 +681,11 @@ class view_editflock:
                 flash("Flock '{0}' updated.".format(form.d.title))
                 feeds = map(get_feed_render_info,get_flock_feeds(node,respect_mutes=not form.d.show_mutes_tweak))
                 description = urlize(node.get('description',''))
+                form.fill(csrf_token=csrf_token(),flock=form.d.flock,
+                    title=form.d.title,description=form.d.description)
                 return render.timeline({'title':u'Channels: {0}'.format(node['title']),
                     'description':description,'feeds':feeds,'max_page_entries':MAX_PAGE_ENTRIES,
-                    'expand_all_entries':False,'hide_feed':False,'edit_form':edit_form,
+                    'expand_all_entries':False,'hide_feed':False,'edit_form':form,
                     'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
         else:
             err = True
@@ -781,8 +783,8 @@ class view_set_password:
         form = password_form()
         form.fill(csrf_token=csrf_token(),oldpass='',newpass='',newagain='')
         if global_account.is_new():
-            # Hide oldpass field
-            form.inputs[1].attrs['style'] = 'display:none'
+            form.inputs[1].attrs['style'] = 'display:none' # hide oldpass
+            form.inputs[1].attrs['class'] = '' # remove focusme
             form.inputs[1].description = ''
         return render.set_password({'form':form})
     @csrf_protected
@@ -795,8 +797,9 @@ class view_set_password:
             flash("Incorrect password. Try again.")
         form.fill(csrf_token=csrf_token(),oldpass='',newpass='',newagain='')
         if global_account.is_new():
-            form.inputs[0].attrs['style'] = 'display:none'
-            form.inputs[0].description = ''
+            form.inputs[1].attrs['style'] = 'display:none' # hide oldpass
+            form.inputs[1].attrs['class'] = '' # remove focusme
+            form.inputs[1].description = ''
         return render.set_password({'form':form})
 
 if __name__ == "__main__":
