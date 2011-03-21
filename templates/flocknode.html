@@ -10,8 +10,8 @@ $if node['type'] == 'flock':
             $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'show'}).render_css()
             <button type="submit">Show</button>
         $else:
-            $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'hide'}).render_css()
-            <button type="submit">Hide</button>
+            $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'mute'}).render_css()
+            <button type="submit">Mute</button>
       </form>
     <span class="node-title$extra_css">$node['title']</span>
     $if account.is_logged_in():
@@ -37,8 +37,8 @@ $else:
             $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'show'}).render_css()
             <button type="submit">Show</button>
         $else:
-            $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'hide'}).render_css()
-            <button type="submit">Hide</button>
+            $:mini_edit_form({'csrf_token':csrf_token(),'subject':node['cache_slug'],'verb':'mute'}).render_css()
+            <button type="submit">Mute</button>
       </form>
     <span class="node-title$extra_css">$node['cache_title']</span>
     $if account.is_logged_in():

@@ -431,7 +431,7 @@ EDIT_VERBS_UNLESS_ROOT = [ ('cut','Cut'), ]
 EDIT_VERBS_IF_CLIPBOARD_UNLESS_ROOT = [ ('paste','Paste after'), ]
 EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD = [ ('prepend','Paste inside'), ]
 # These verbs are here for form validation only
-EDIT_VERBS_NOT_IN_MENU = [ ('hide','Hide'), ('show','Show'),
+EDIT_VERBS_NOT_IN_MENU = [ ('mute','Mute'), ('show','Show'),
     ('clearcb','Clear'), ('addfeed', 'Add feed'), ('addflock', 'Add Flock') ]
 
 # Used for validation
@@ -546,7 +546,7 @@ class view_index:
                 flash('Item not found. This can happen when you logout, edit your flock, etc.')
                 raise web.seeother('/')
         ### Do the verb
-        if form.d.verb == 'hide': # Verb: Hide
+        if form.d.verb == 'mute': # Verb: Mute
             node['mute']=True
             save_root_flock(global_db,root)
             flash('Marked {0} as hidden'.format(node['type']))
