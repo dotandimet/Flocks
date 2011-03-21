@@ -241,6 +241,13 @@ def get_flock_feeds(flock,respect_mutes=False,veteran=False):
         raise ValueError,'bad flock type %s for %s' % (`flocktype`,flock)
     return feeds
 
+def get_all_feed_titles(feed_dict=None):
+    feed_dict = feed_dict or JsonDb(global_db,"feed")
+    res = set()
+    for k,v in feed_dict.items():
+        res.add(v['title'])
+    return res
+
 def flock_cachify(flock,feed_dict={},path=[]):
     """ To make things easier for templates and such, we add 2 items to each node
         cache_slug - an html-safe string representing the path to the node (e.g. for form field)
@@ -619,16 +626,20 @@ class view_editfeed:
             feed_dict=JsonDb(global_db,"feed")
             url = form.d.url
             rtl = form.d.direction=='rtl'
+            title = form.d.title.strip()
             feed_info = get_feed_info(url,feed_dict)
-            feed_info.update(title=form.d.title,rtl=rtl,description=form.d.description)
+            if title!=feed_info['title'] and title in get_all_feed_titles():
+                title=u'{0} {1}'.format(title,datetime2str(now()).replace('T',' '))
+                flash('Warning! Feed was renamed to avoid conflicts!')
+            feed_info.update(title=title,rtl=rtl,description=form.d.description)
             feed_dict[url] = feed_info
             try: # feed's cache is no longer relevant
               del JsonDb(global_db,"cache")[url]
             except KeyError:
               pass
-            flash(u"Feed '{0}' updated.".format(form.d.title))
+            flash(u"Feed '{0}' updated.".format(title))
             description = urlize(feed_info.get('description',''))
-            form.fill(csrf_token=csrf_token(),url=url,title=form.d.title,
+            form.fill(csrf_token=csrf_token(),url=url,title=title,
                 direction=form.d.direction,description=form.d.description)
             not_in_flock = not (url in get_flock_feeds(get_root_or_public_flock(global_db)))
             return render.timeline({'title':u'Channels: {0}'.format(feed_info['title']),

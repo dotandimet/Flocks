@@ -54,9 +54,17 @@ a.internal-link:hover, button:hover {
     background: #20A2AE;
 }
 
+div.clipboard {
+    background: white;
+    border: solid black 1px;
+    padding:4px 0 0 4px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+}
 
 form.login-menu { float:right; margin-left:4px; line-height:36px }
 form.inline-form,form.inline-with-labels { display:inline; line-height:36px }
+.clipboard form.inline-form { line-height: 18px }
 form.inline-form { padding-left:4px; border-left: groove 2px; }
 .rtl form.inline-form { padding-right:4px; border-right: groove 2px; border-left:none }
 .node-title, .entry-title { padding:0 4px; font-weight:bold; border-left: groove 2px }
@@ -199,22 +207,17 @@ div.page ul.flock {
     -webkit-border-radius: 5px;
 }
 
+div.page .clipboard ul.flock { margin-top:4px }
+
 div.page ul.flock li {
     position:relative; /* enable input.toggler position:absolute trickery */
     margin: 0 0 4px 20px;
     padding: 10px 5px 5px;
 }
+div.page .clipboard ul.flock li { padding-top:4px }
 
 .mute .node-title { background:#CFCFCF; padding:1px 4px }
 .node-title.mute { background:#AFAFAF; padding:1px 4px }
-
-div.clipboard {
-    background: white;
-    border: solid black 1px;
-    padding:4px;
-    -moz-border-radius: 5px;
-    -webkit-border-radius: 5px;
-}
 
 div.page div.clipboard ul.flock { background:none }
 
@@ -278,6 +281,8 @@ div.node-details {
     position:relative; /* enable input.toggler position:absolute trickery */
     line-height:36px;
     margin-bottom: 4px }
+
+.clipboard div.node-details { line-height: 18px }
 
 div.page div.node-details span.inline-toggler { float:left; line-height:1em; margin:4px }
 
