@@ -26,6 +26,8 @@ urls = (
     "/channel", "view_channel",
     "/channels", "view_channels",
     "/newflock", "view_newflock",
+    "/editflock", "view_editflock",
+    "/editfeed", "view_editfeed",
     "/login","view_login",
     "/logout","view_logout",
     "/set_password","view_set_password",
@@ -397,12 +399,23 @@ channels_form = web.form.Form(
     web.form.Button('Go')
 )
 
+edit_feed_form = web.form.Form(
+    web.form.Hidden('csrf_token'),
+    web.form.Hidden('url'),
+    web.form.Textbox('title',web.form.notnull,description='Feed name', size=23, tabindex=100,class_='focusme'),
+    web.form.Textbox('description',description='Description',size=80,tabindex=101,value=''),
+    web.form.Dropdown('direction',description='Direction',args=[
+        ('ltr','Left to right'), ('rtl','Right to left') ],value='ltr',tabindex=102),
+    web.form.Button('Update feed',tabindex=103)
+)
+
 edit_flock_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Hidden('flock'),
+    web.form.Hidden('show_mutes_tweak'),
     web.form.Textbox('title',web.form.notnull,description='Flock name', size=23, tabindex=100,class_='focusme'),
-    web.form.Textbox('description',description='Optional description',size=80,tabindex=101,value=''),
-    web.form.Button('Add flock',tabindex=103)
+    web.form.Textbox('description',description='Description',size=80,tabindex=101,value=''),
+    web.form.Button('Update flock',tabindex=103)
 )
 
 # Edit form menu items
@@ -597,6 +610,87 @@ class view_index:
         return render.index({
             'flock':root,'rendered':rendered,'clipboard':cb,'scrollto':scrollto})
 
+class view_editfeed:
+    @csrf_protected
+    def POST(self):
+        form = edit_feed_form()
+        err = False
+        if form.validates():
+            feed_dict=JsonDb(global_db,"feed")
+            url = form.d.url
+            rtl = form.d.direction=='rtl'
+            feed_info = get_feed_info(url,feed_dict)
+            feed_info.update(title=form.d.title,rtl=rtl,description=form.d.description)
+            feed_dict[url] = feed_info
+            try: # feed's cache is no longer relevant
+              del JsonDb(global_db,"cache")[url]
+            except KeyError:
+              pass
+            flash(u"Feed '{0}' updated.".format(form.d.title))
+            description = urlize(feed_info.get('description',''))
+            form.fill(csrf_token=csrf_token(),url=url,title=form.d.title,
+                direction=form.d.direction,description=form.d.description)
+            not_in_flock = not (url in get_flock_feeds(get_root_or_public_flock(global_db)))
+            return render.timeline({'title':u'Channels: {0}'.format(feed_info['title']),
+                'description':description,'feeds':[get_feed_render_info(url)],
+                'feed_url':url,'site_url':feed_info.get('link'),'not_in_flock':not_in_flock,
+                'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':True,'hide_feed':True,'edit_form':form,
+                'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
+        else:
+            form.fill(csrf_token=csrf_token(),url=form.d.url,title=form.d.title,
+                direction=form.d.direction,description=form.d.description)
+            return render.editfeed({'form':form})
+
+class view_newflock:
+    def GET(self):
+        form = edit_flock_form()
+        form.fill(csrf_token=csrf_token())
+        return render.editflock({'form':form,'new':True})
+    @csrf_protected
+    def POST(self):
+        form = edit_flock_form()
+        if form.validates():
+            set_clipboard({'type':'flock','title':form.d.title,'description':form.d.description,'items':[]})
+            flash('Your new flock is now in the clipboard.')
+            return web.seeother('/')
+        else:
+            form.fill(csrf_token=csrf_token())
+            return render.editflock({'form':form,'new':True})
+
+class view_editflock:
+    @csrf_protected
+    def POST(self):
+        form = edit_flock_form()
+        err = False
+        if form.validates():
+            root = get_root_or_public_flock(global_db)
+            slug = form.d.flock
+            path = slug and slug.split('_') or []
+            node = flock_get(root,path)
+            if not node or node.get('type')!='flock':
+                flash('Flock not found. This can happen if you logout. Please try again.')
+                return web.seeother('/')
+            if path and form.d.title != node['title']:
+                parent = flock_get(root,path[:-1])
+                if parent and subflock(parent,form.d.title):
+                    flash('Duplicate name. Please try again')
+                    err = True
+            if not err:
+                node.update(title=form.d.title,description=form.d.description)
+                save_root_flock(global_db,root)
+                flash("Flock '{0}' updated.".format(form.d.title))
+                feeds = map(get_feed_render_info,get_flock_feeds(node,respect_mutes=not form.d.show_mutes_tweak))
+                description = urlize(node.get('description',''))
+                return render.timeline({'title':u'Channels: {0}'.format(node['title']),
+                    'description':description,'feeds':feeds,'max_page_entries':MAX_PAGE_ENTRIES,
+                    'expand_all_entries':False,'hide_feed':False,'edit_form':edit_form,
+                    'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
+        else:
+            err = True
+        if err:
+            form.fill(csrf_token=csrf_token(),flock=form.d.flock,title=form.d.title,description=form.d.description)
+            return render.editflock({'form':form})
+
 class view_channel:
     def GET(self):
         flash('Please select a feed to view.')
@@ -613,9 +707,15 @@ class view_channel:
         description = urlize(feed_info.get('description',''))
         url = feed_info['url']
         not_in_flock = not (url in get_flock_feeds(get_root_or_public_flock(global_db)))
+        if global_account.is_logged_in():
+            edit_form = edit_feed_form()
+            edit_form.fill(csrf_token=csrf_token(),url=form.d.url,title=feed_info['title'],
+                description=feed_info.get('description'),direction=feed_info.get('rtl') and 'rtl' or 'ltr')
+        else:
+            edit_form = None
         return render.timeline({
             'title':u'Channel: {0}'.format(title),'description':description,'feeds':[feed_info],
-            'feed_url':url,'site_url':feed_info.get('link'),'not_in_flock':not_in_flock,
+            'feed_url':url,'site_url':feed_info.get('link'),'not_in_flock':not_in_flock,'edit_form':edit_form,
             'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':True,'hide_feed':True,
             'max_feed_entries':MAX_SINGLE_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
@@ -638,25 +738,15 @@ class view_channels:
         feeds = map(get_feed_render_info,get_flock_feeds(flock,respect_mutes=not form.d.all))
         title = flock['title']
         description = urlize(flock.get('description',''))
-        return render.timeline({'title':u'Channels: {0}'.format(title),'description':description,'feeds':feeds,
-            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':False,'hide_feed':False,
-            'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
-
-class view_newflock:
-    def GET(self):
-        form = edit_flock_form()
-        form.fill(csrf_token=csrf_token())
-        return render.newflock({'form':form})
-    @csrf_protected
-    def POST(self):
-        form = edit_flock_form()
-        if form.validates():
-            set_clipboard({'type':'flock','title':form.d.title,'description':form.d.description,'items':[]})
-            flash('Your new flock is now in the clipboard.')
-            return web.seeother('/')
+        if global_account.is_logged_in():
+            edit_form = edit_flock_form()
+            edit_form.fill(csrf_token=csrf_token(),flock=form.d.flock,title=flock['title'],
+                description=flock.get('description'),show_mutes_tweak=form.d.all)
         else:
-            form.fill(csrf_token=csrf_token())
-            return render.newflock({'form':form})
+            edit_form = None
+        return render.timeline({'title':u'Channels: {0}'.format(title),'description':description,'feeds':feeds,
+            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':False,'hide_feed':False,'edit_form':edit_form,
+            'max_feed_entries':MAX_FLOCK_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
 class view_login:
     def GET(self):

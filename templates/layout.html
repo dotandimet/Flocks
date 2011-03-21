@@ -39,7 +39,7 @@ $ homepath = ctx.homepath
             </form>
         <a class=internal-link href="$homepath/">Home</a>
         $if account.is_logged_in() and not rendered.get('is_new_flock_page'):
-          <a class=internal-link href="$homepath/newflock">New</a>
+          <a class=internal-link href="$homepath/newflock">New flock</a>
         $if not rendered.get('no_feed_form'):
           <form class="inline-with-labels" method=post action="$homepath/channel">
             $code:

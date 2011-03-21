@@ -60,10 +60,11 @@ form.inline-form,form.inline-with-labels { display:inline; line-height:36px }
 form.inline-form { padding-left:4px; border-left: groove 2px; }
 .rtl form.inline-form { padding-right:4px; border-right: groove 2px; border-left:none }
 .node-title, .entry-title { padding:0 4px; font-weight:bold; border-left: groove 2px }
+.guest-user .node-title { border:none }
 .rtl .node-title, .rtl .entry-title { border-right: groove 2px; border-left:none }
 .noborder { border:none !important }
 form.inline-form label { display:none }
-from td { text-align:left; vertical-align:top }
+form td { text-align:left; vertical-align:top }
 form th { text-align:right; vertical-align:top }
 
 .hide-feed .entry-title {border:none}
@@ -141,6 +142,7 @@ div.page ul.messages {
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
     min-height:30px;
+    clear:both;
 }
 
 #loading-list {
@@ -235,6 +237,8 @@ input.toggler {
 
 ul.messages input.toggler { top:28px }
 
+.node-details input.toggler { top:8px; left:4px }
+
 span.toggler-label {
     padding-left:20px
 }
@@ -269,7 +273,12 @@ div.item-time {
     margin:0px 2px;
 }
 
-div.feed-details { margin-bottom: 4px }
+div.node-details {
+    position:relative; /* enable input.toggler position:absolute trickery */
+    line-height:36px;
+    margin-bottom: 4px }
+
+div.page div.node-details span.inline-toggler { float:left; line-height:1em; margin:4px }
 
 .feed-reference { font-size: 0.9em; }
 

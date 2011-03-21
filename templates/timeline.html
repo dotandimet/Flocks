@@ -9,7 +9,15 @@ $ extra_css = args.get('hide_feed') and ' hide-feed' or ''
   </ul>
 </div>
 $if args.has_key('feed_url'):
-    <div class="feed-details">
+    <div class="node-details">
+      $if args.has_key('edit_form') and account.is_logged_in():
+        <span class="toggler-label inline-toggler">Edit</span>
+        <input type="checkbox" class="toggler">
+        <div class="inline-editor">
+          <form method=post action='$homepath/editfeed'>
+            $:args['edit_form'].render()
+          </form>
+        </div>
       $if args.has_key('site_url'):
         <a class="site-reference" href="$args['site_url']">Site</a>,
       <span class="feed-reference">
@@ -22,8 +30,17 @@ $if args.has_key('feed_url'):
           </form>
       </span>
     </div>
-<ul class='messages$extra_css' id=messages>
-</ul>
+$elif args.has_key('edit_form') and account.is_logged_in():
+    <div class="node-details">
+        <span class="toggler-label inline-toggler">Edit</span>
+        <input type="checkbox" class="toggler">
+        <div class="inline-editor">
+          <form method=post action='$homepath/editflock'>
+            $:args['edit_form'].render()
+          </form>
+        </div>
+    </div>
+<ul class='messages$extra_css' id=messages> </ul>
 <script type=text/javascript>
 window.MAX_PAGE_ENTRIES = ${args.get('max_page_entries',5)};
 window.MAX_FEED_ENTRIES = ${args.get('max_feed_entries',5)};

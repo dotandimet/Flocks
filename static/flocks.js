@@ -7,8 +7,10 @@ window.tweak_content=function() {
 }
 $(function() {
     $.manageAjax.create('flocks',{queue:true}); 
-    $('.flashes li').prepend($('<button/>').addClass('important').text('X').click(function() {
-        $(this).parent().slideUp(1000).remove(); return false;})).css('opacity',.9);
+    $('.flashes li').each(function() {
+        $(this).prepend($('<a/>').attr('href','#').click(function() {
+            $(this).parent().remove(); return false;}).addClass(
+                'internal-link important').append('<b/>').text('X')).css('opacity',.9)});
     window.tweak_content();
     $('.focusme:first').focus();
     $('#feed-url').click(function() {$(this).select()});

@@ -2,6 +2,7 @@ $def with (args)
 $ flock = args['flock']
 $var title: ${'Flock: '+flock.get('title','(untitled flock)')}
 $var description: ${flock.get('description','')}
+$ extra_css = not account.is_logged_in() and ' guest-user' or ''
 $if args.get('scrollto'):
   <script type='text/javascript'>
     window.SCROLLTO="$args['scrollto']";
@@ -14,6 +15,6 @@ $if account.is_logged_in() and args.get('clipboard'):
       <li>$:args['clipboard']</li>
     </ul>
   </div>
-<ul class="flock">
+<ul class="flock$extra_css">
   <li>$:args.get('rendered')</li>
 </ul>
