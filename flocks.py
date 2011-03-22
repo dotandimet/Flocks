@@ -14,7 +14,6 @@ MAX_FLOCK_FEED_ENTRIES = 10
 HTTP_PORT = 6378 # "Nest" on phone keyboard
 ###
 
-from copy import deepcopy
 import web
 from sys import argv
 argv[1:] = ['127.0.0.1:{0}'.format(HTTP_PORT)] # That's how you set ip:port in web.py ;) 
@@ -44,6 +43,20 @@ if web.config.get('_session') is None:
     web.config._session = global_session
 else:
     global_session = web.config._session
+
+#### General purpose imports and functions
+from copy import deepcopy
+try:
+    import simplejson as json
+except:
+    import json
+from exceptions import Exception, KeyError, SyntaxError, ValueError
+from urllib2 import quote as urlquote
+
+def hard_strip(s):
+    """Strips strings. Anything else becomes ''"""
+    try: return s.strip()
+    except AttributeError: return ''
 
 #### handy time utils
 import datetime
@@ -100,12 +113,7 @@ def csrf_protected(f):
     return decorated
 
 ### JsonDb
-from exceptions import KeyError, SyntaxError
 from UserDict import DictMixin
-try:
-    import simplejson as json
-except:
-    import json
 
 class JsonDb(DictMixin):
     """A thread-safe persistent-dictionary on top of web.py's web.database. Can only store "jsonable" values.
@@ -180,7 +188,7 @@ Methods:
     
     def _check_password(self,password):
         import hmac
-        return hmac.new(self.jdb['key'].decode('hex'),password).hexdigest() == self.jdb['passhash']
+        return hmac.new(self.jdb['key'].decode('hex'),password).hexdigest()==self.jdb['passhash']
 
     def login(self,password):
         if self._check_password(password):
@@ -209,7 +217,7 @@ Methods:
 ### Flock functions
 def flockslug(obj):
     "Receives a name string for a flock node (dict). Returns an html-safe slug. Case insensitive."
-    if type(obj) == type({}):
+    if type(obj)==type({}):
         obj = obj.get('url',obj.get('title'))
     return 'f%d' % hash(obj.lower())
 
@@ -262,6 +270,16 @@ def flock_cachify(flock,feed_dict={},path=[]):
         flock['cache_title'] = feed_dict.get(url,{}).get('title',url)
     return flock
 
+def flock_decachify(node):
+    for k in ['cache_slug','cache_title']:
+        try:
+            del node[k]
+        except KeyError:
+            pass
+    for i in node.get('items',[]):
+        flock_decachify(i)
+    return node
+
 def flock_render(node,template):
     "Recursively render a flock"
     return template({
@@ -269,12 +287,13 @@ def flock_render(node,template):
         'items':[flock_render(i,template) for i in node.get('items',[])]})
 
 ### Feed functions
-def feed_update(myfeed,otherfeed):
+def feed_info_merge(myfeed,otherfeed):
     modified = False
     for k in ['title','description','link','rtl']:
         if k=='link' or not myfeed.has_key(k): # link is always updated
-            v=otherfeed.get(k,'').strip()
-            if v and v != myfeed.get(k):
+            v = otherfeed.get(k)
+            v = k=='rtl' and not not v or hard_strip(v) # coerce to boolean or string
+            if v and v!=myfeed.get(k):
                 myfeed[k]=v
                 modified = True
     return modified
@@ -295,15 +314,15 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
         etag = modified = None
     parsed = feedparser.parse(url,etag=etag)
     status = parsed.get('status',500)
-    if status != 304:
+    if status!=304:
         print "Status {0} ({1} entries, bozo={2}) for {3}  (etag={4})".format(
             status,len(parsed.get('entries',[])),parsed.get('bozo_exception'),url,etag)
-    if status == 200:
+    if status==200:
         # kludge because there are 3 ways for a feed to show modified time (if None counts as one)
         feed_modified = timestruct2str(parsed.get('updated_parsed',parsed.feed.get('updated_parsed',None)))
         etag = parsed.get('etag')
         feed_info = feed_dict.get(url,{})
-        if feed_update(feed_info,{'title':parsed.feed.title,'link':parsed.feed.link}):
+        if feed_info_merge(feed_info,{'title':parsed.feed.title,'link':parsed.feed.link}):
             feed_dict[url] = feed_info
         cache = {
             'expires':datetime2str(now()+seconds2delta(FEED_CACHE_TIMEOUT)),
@@ -321,20 +340,7 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
         cache_dict[url] = cache
     return cache_dict[url] # might throw an error (e.g. if bad url)
 
-### DB and JsonDb utilities
-
-def import_feeds(feed_dict,import_dict):
-    for k in import_dict.keys():
-        if k.startswith('feed:'):
-            url = k[len('feed:'):]
-            feed = feed_dict.get(url,{})
-            feed_update(feed,import_dict[k])
-            feed_dict[url] = feed
-
-def import_flock_file(db,filename):
-    imported = json.load(file(filename))
-    import_feeds(JsonDb(db,"feed"),imported)
-    return imported.get('flock')
+### Various db/clipboard access functions
 
 def get_root_or_public_flock(db):
     jdb = JsonDb(db)
@@ -383,7 +389,7 @@ password_form = web.form.Form(
     web.form.Password("newagain",description="New password again",tabindex=102),
     web.form.Button("Update password",tabindex=103),
     validators = [
-        web.form.Validator("Passwords didn't match.", lambda i: i.newpass == i.newagain)
+        web.form.Validator("Passwords didn't match.", lambda i: i.newpass==i.newagain)
     ]
 )
 
@@ -423,31 +429,39 @@ edit_flock_form = web.form.Form(
     web.form.Hidden('show_mutes_tweak'),
     web.form.Textbox('title',web.form.notnull,description='Flock name', size=23, tabindex=100,class_='focusme'),
     web.form.Textbox('description',description='Description',size=80,tabindex=101,value=''),
-    web.form.Button('Update flock',tabindex=103)
+    web.form.Button('Save',tabindex=103)
 )
 
 # Edit form menu items
 EDIT_VERBS_ALWAYS = [ ('copy','Copy'), ]
 EDIT_VERBS_UNLESS_ROOT = [ ('cut','Cut'), ]
 EDIT_VERBS_IF_CLIPBOARD_UNLESS_ROOT = [ ('paste','Paste after'), ]
+EDIT_VERBS_FOR_FLOCK = [ ('export','Share'), ]
 EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD = [ ('prepend','Paste inside'), ]
 # These verbs are here for form validation only
 EDIT_VERBS_NOT_IN_MENU = [ ('mute','Mute'), ('show','Show'),
-    ('clearcb','Clear'), ('addfeed', 'Add feed'), ('addflock', 'Add Flock') ]
+    ('clearcb','Clear'), ('addfeed', 'Add feed'), ('addflock', 'Add Flock'), ('import', 'Import FlockShare'), ]
 
 # Used for validation
 EDIT_VERBS_ALL = deepcopy(EDIT_VERBS_ALWAYS) + deepcopy(EDIT_VERBS_UNLESS_ROOT)
-EDIT_VERBS_ALL += deepcopy(EDIT_VERBS_IF_CLIPBOARD_UNLESS_ROOT)
+EDIT_VERBS_ALL += deepcopy(EDIT_VERBS_IF_CLIPBOARD_UNLESS_ROOT) + deepcopy(EDIT_VERBS_FOR_FLOCK) 
 EDIT_VERBS_ALL += deepcopy(EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD) + deepcopy(EDIT_VERBS_NOT_IN_MENU)
 
-edit_form = web.form.Form(web.form.Hidden('csrf_token'), web.form.Hidden('subject'),
+edit_form = web.form.Form(web.form.Hidden('csrf_token'),
+    web.form.Hidden('subject'),
     web.form.Dropdown('verb',args=EDIT_VERBS_ALL,value='copy'),
     web.form.Button('Do'))
 
 mini_edit_form = web.form.Form(web.form.Hidden('csrf_token'), web.form.Hidden('subject'), web.form.Hidden('verb'))
 
+import_flockshare_form = web.form.Form(
+    web.form.Hidden('csrf_token'),
+    web.form.Hidden('verb',value='import'), # for some reason we need to say it again at form.fill() ?!?
+    web.form.Textarea('subject',description='FlockShare',rows=5,cols=60,class_='flockshare',tabindex=200), 
+    web.form.Button('Import FlockShare',tabindex=201)
+)
+
 ### Rendering helpers
-from urllib2 import quote as urlquote
 
 def custom_edit_form(node):
     "returns edit_form with custom menu according to node type and clipboard. Also adds csrf_token"
@@ -458,8 +472,10 @@ def custom_edit_form(node):
         menu += deepcopy(EDIT_VERBS_UNLESS_ROOT)
         if get_clipboard():
             menu += deepcopy(EDIT_VERBS_IF_CLIPBOARD_UNLESS_ROOT)
-    if get_clipboard() and node.get('type') == 'flock':
-        menu += deepcopy(EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD)
+    if node.get('type')=='flock':
+        if get_clipboard():
+            menu += deepcopy(EDIT_VERBS_FOR_FLOCK_IF_CLIPBOARD)
+        menu += deepcopy(EDIT_VERBS_FOR_FLOCK)
     form.inputs[2].args = menu
     return form
 
@@ -498,9 +514,98 @@ render = web.template.render('templates',base='layout',globals=render_globals)
 # for partial render, xml, etc.
 baseless_render = web.template.render('templates',globals=render_globals)
 
+
+### FlockShare Import
+
+def add_sanities(a,b):
+    """Combines 2 dictionaries returned by sanitize_node()""" 
+    return {
+        'values':a['values']+b['values'],
+        'feeds':a['feeds'].union(b['feeds']),
+        'errors':a['errors']+b['errors'],
+    }
+
+def sanitizer_error(message,path,here='?'):
+    """Returns a trivial-yet valid 'sanity dict' containing an error message"""
+    return {'values':[],'feeds':set(),'errors':['{0} at "{1}/{2}"'.format(message,'/'.join(path),here)]}
+
+def sanitize_node(node,path=[]):
+    """Accepts an [alleged] flock or feed node, and returns a 'sanity' dict with:
+       values - a list with a element (empty if there's a top level error)
+       feeds - a set of all feed urls in the sanitized node
+       errors - a list of error strings"""
+    if type(node)!=type({}): return sanitizer_error('Not a dictionary',path)
+    nodetype = node.get('type','baaad')
+    if nodetype=='feed':
+        url = hard_strip(node.get('url'))
+        if not valid_url(url): return sanitizer_error('Invalid feed URL',path)
+        value = {'type':'feed','url':url}
+        value['mute'] = not not node.get('mute',False)
+        return {'values':[value],'feeds':set([url]),'errors':[]}
+    elif nodetype=='flock':
+        title = hard_strip(node.get('title'))
+        if not title: return sanitizer_error('No title for flock',path)
+        value = {'type':'flock','title':title, 'description':hard_strip(node.get('description'))}
+        items = node.get('items')
+        if type(items)!=type([]): return sanitizer_error('Invalid flock item list',path,title)
+        sanities = reduce(add_sanities,[sanitize_node(i,path+[title]) for i in items])
+        value['items'] = sanities['values']
+        return {'values':[value],'feeds':sanities['feeds'],'errors':sanities['errors']}
+    else:
+        return sanitizer_error('Invalid node type',path)
+
+def import_flockshare(fs,feed_dict=None):
+    feed_dict = feed_dict or JsonDb(global_db,"feed")
+    sanity = sanitize_node(fs.get('flock'))
+    if not sanity['values']: return sanity
+    feed_titles = get_all_feed_titles(feed_dict)
+    feed_urls = set(feed_dict.keys())
+    feeds = fs.get('feeds')
+    for url in sanity['feeds']:
+        if url in feed_urls: continue
+        title = hard_strip(feed.get('title',url))
+        if title.lower() in feed_titles:
+            title = u' '.join(title,datetime2str(now()).replace('T',' ')) # the T messes up rtl :)
+            sanity['errors'].append(u'Renamed feed "{0}" to avoid conflicts'.format(feed['title']))
+        value = {'title':title, 'description':hard_strip(feed.get('description')),'rtl':(not not feed.get('rtl'))}
+        link = hard_strip(feed.get('link'))
+        if link:
+            if valid_url(link):
+                value['link'] = link
+            else:
+                sanity['errors'].append(u'Invalid link for feed "{0}"'.format(title))
+        feed_dict[url] = value
+        feed_titles.add(title)
+        feed_urls.add(url)
+    return sanity
+
+def import_feeds(node,feed_dict):
+    for k in import_dict.keys():
+        if k.startswith('feed:'):
+            url = k[len('feed:'):]
+            feed = feed_dict.get(url,{})
+            value = feed_info_merge({},feed) # sanitize whatever's in there
+            if not value.has_key('title'): value['title'] = url
+            feed_dict[url] = value
+
+def import_flock_file(db,filename):
+    imported = json.load(file(filename))
+    import_feeds(JsonDb(db,"feed"),imported)
+    return imported.get('flock')
+
+### FlockShare export
+
+def export_flockshare(flock,feed_dict=None):
+    feed_dict = feed_dict or JsonDb(global_db,"feed")
+    fs = {'flock':flock_decachify(flock),'feeds':{}}
+    for url in get_flock_feeds(flock):
+        fs['feeds'][url] = get_feed_info(url,feed_dict)
+    return fs
+
+##### Views #####
+
 ### JSON views
 
-from exceptions import Exception
 
 class view_api_channel:
     def PUT(self):
@@ -510,7 +615,7 @@ class view_api_channel:
     def GET(self): ### temporary
         return self.PUT()
 
-### Views
+### HTML views
 class view_index:
     def GET(self):
         feed_dict=JsonDb(global_db,"feed")
@@ -533,7 +638,7 @@ class view_index:
         root = get_root_or_public_flock(global_db)
         scrollto = form.d.subject
         feed_dict=JsonDb(global_db,"feed")
-        if form.d.verb in ['clearcb','addfeed','addflock']: # verbs where subject is not a flock
+        if form.d.verb in ['clearcb','addfeed','addflock','import']: # verbs where subject is not a flock
             scrollto = None
         else:
             if form.d.subject:
@@ -547,18 +652,18 @@ class view_index:
                 flash('Item not found. This can happen when you logout, edit your flock, etc.')
                 raise web.seeother('/')
         ### Do the verb
-        if form.d.verb == 'mute': # Verb: Mute
+        if form.d.verb=='mute': # Verb: Mute
             node['mute']=True
             save_root_flock(global_db,root)
             flash('Marked {0} as hidden'.format(node['type']))
-        elif form.d.verb == 'show': # Verb: Show
+        elif form.d.verb=='show': # Verb: Show
             node['mute']=False
             save_root_flock(global_db,root)
             flash('Marked {0} as visible'.format(node['type']))
-        elif form.d.verb == 'copy': # Verb: Copy
+        elif form.d.verb=='copy': # Verb: Copy
             set_clipboard(node)
             flash('Copied {0} to clipboard'.format(node['type']))
-        elif form.d.verb == 'cut': # Verb: Cut
+        elif form.d.verb=='cut': # Verb: Cut
             scrollto = None
             if not slugpath:
                 flash("can't cut root flock.")
@@ -571,7 +676,7 @@ class view_index:
                     flash('Moved {0} to clipboard'.format(node['type']))
                     parent['items'].remove(node)
                     save_root_flock(global_db,root)
-        elif form.d.verb == 'paste': # Verb: Paste after
+        elif form.d.verb=='paste': # Verb: Paste after
             if not slugpath:
                 flash("can't paste after root flock")
             cb = flock_cachify(get_clipboard(),feed_dict)
@@ -587,7 +692,7 @@ class view_index:
                     parent['items'].insert(1+parent['items'].index(node),cb)
                     save_root_flock(global_db,root)
                     flash("Pasted.")
-        elif form.d.verb == 'prepend': # Verb: Paste inside
+        elif form.d.verb=='prepend': # Verb: Paste inside
             cb = flock_cachify(get_clipboard(),feed_dict)
             if not cb:
                 flash("Can't paste from empty clipboard")
@@ -599,15 +704,36 @@ class view_index:
                 node['items'].insert(0,cb)
                 save_root_flock(global_db,root)
                 flash("Pasted.")
-        elif form.d.verb == 'clearcb': # Verb: Clear
+        elif form.d.verb=='clearcb': # Verb: Clear
             set_clipboard(None)
             flash('Clipboard was cleared.')
-        elif form.d.verb == 'addfeed': # Verb: Add feed
+        elif form.d.verb=='addfeed': # Verb: Add feed
             if valid_url(form.d.subject):
                 set_clipboard({'type':'feed','url':form.d.subject})
                 flash('Feed was copied to clipboard.')
             else:
                 flash("Can't add feed. Invalid URL: '{0}").format(form.d.subject)
+        elif form.d.verb=='export': # Verb: Export FlockShare
+            return render.flockshare({'title':node['title'],'flockshare':json.dumps(export_flockshare(node))})
+        elif form.d.verb=='import': # Verb: Export FlockShare
+            try:
+                node = json.loads(form.d.subject)
+            except ValueError:
+                node = None
+            if type(node)!=type({}):
+                flash("Invalid FlockShare syntax")
+                raise web.seeother('/')
+            sanity = import_flockshare(node,feed_dict)
+            for e in sanity['errors'][:5]:
+                flash(e)
+            if len(sanity['errors'])>5:
+                flash('More errors...')
+            if sanity['values']:
+                set_clipboard(sanity['values'][0])
+                flash('Imported into clipboard')
+            else:
+                flash('Nothing was imported')
+            raise web.seeother('/')
         else: # Unknown verb
             flash('Bug: unknown verb {0}'.format(form.d.verb))
             raise web.seeother('/')
@@ -619,6 +745,9 @@ class view_index:
             'flock':root,'rendered':rendered,'clipboard':cb,'scrollto':scrollto})
 
 class view_editfeed:
+    def GET(self):
+        flash("Sorry. Stale browser page. Please try again whatever you were doing.")
+        raise web.seeother('/')
     @csrf_protected
     def POST(self):
         form = edit_feed_form()
@@ -630,7 +759,7 @@ class view_editfeed:
             title = form.d.title.strip()
             feed_info = get_feed_info(url,feed_dict)
             if title.lower()!=feed_info['title'].lower() and title.lower() in get_all_feed_titles():
-                title=u'{0} {1}'.format(title,datetime2str(now()).replace('T',' '))
+                title = u' '.join(title,datetime2str(now()).replace('T',' ')) # the T messes up rtl :)
                 flash('Warning! Feed was renamed to avoid conflicts!')
             feed_info.update(title=title,rtl=rtl,description=form.d.description)
             feed_dict[url] = feed_info
@@ -657,7 +786,9 @@ class view_newflock:
     def GET(self):
         form = edit_flock_form()
         form.fill(csrf_token=csrf_token())
-        return render.editflock({'form':form,'new':True})
+        import_form = import_flockshare_form()
+        import_form.fill(csrf_token=csrf_token(),verb='import')
+        return render.editflock({'form':form,'import_form':import_form,'new':True})
     @csrf_protected
     def POST(self):
         form = edit_flock_form()
@@ -667,9 +798,14 @@ class view_newflock:
             return web.seeother('/')
         else:
             form.fill(csrf_token=csrf_token())
-            return render.editflock({'form':form,'new':True})
+            import_form = flockshare_form()
+            import_form.fill(csrf_token=csrf_token(),verb='import')
+            return render.editflock({'form':form,'import_form':import_form,'new':True})
 
 class view_editflock:
+    def GET(self):
+        flash("Sorry. Stale browser page. Please try again whatever you were doing.")
+        raise web.seeother('/')
     @csrf_protected
     def POST(self):
         form = edit_flock_form()
@@ -682,7 +818,7 @@ class view_editflock:
             if not node or node.get('type')!='flock':
                 flash('Flock not found. This can happen if you logout. Please try again.')
                 return web.seeother('/')
-            if path and form.d.title.lower() != node['title'].lower():
+            if path and form.d.title.lower()!=node['title'].lower():
                 parent = flock_get(root,path[:-1])
                 if parent and subflock(parent,form.d.title):
                     flash('Duplicate name. Please try again')
@@ -785,6 +921,9 @@ class view_login:
         return render.login({'form':form})
 
 class view_logout:
+    def GET(self):
+        flash("Sorry. Stale browser page. Please try again.")
+        raise web.seeother('/')
     @csrf_protected
     def POST(self):
         global_account.logout()
@@ -822,5 +961,5 @@ class view_favicon:
     def GET(self):
         raise web.redirect('/static/favicon.ico')
 
-if __name__ == "__main__":
+if __name__=="__main__":
    app.run()

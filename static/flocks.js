@@ -13,7 +13,7 @@ $(function() {
                 'internal-link important').append('<b/>').text('X')).css('opacity',.9)});
     window.tweak_content();
     $('.focusme:first').focus();
-    $('#feed-url').click(function() {$(this).select()});
+    $('#feed-url, #flockshare').click(function() {$(this).select()});
     if (window.SCROLLTO!=undefined && window.SCROLLTO) {
      	$('html,body').animate({scrollTop: $("#"+window.SCROLLTO).offset().top-60},'slow');
     }

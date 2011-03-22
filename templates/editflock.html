@@ -2,6 +2,11 @@ $def with (args)
 $var title: ${args.get('new') and 'Add a new flock' or 'Edit flock'}
 $var is_new_flock_page: $args.get('new')
 $var no_feed_form: True
+<h2>Create a new Flock</h2>
 <form action="" method=POST>
   $:args['form'].render()
+</form>
+<h2>Or import a FlockShare</h2>
+<form action="$ctx.homepath/" method=POST>
+  $:args['import_form'].render()
 </form>
