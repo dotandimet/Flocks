@@ -403,7 +403,7 @@ channel_form = web.form.Form(
 channels_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Hidden('flock'),
-    web.form.Dropdown('all',args=[('','Normal view'),('yes','Show hidden')],value='',description='All feeds?'),
+    web.form.Dropdown('all',args=[('','Normal view'),('yes','Show muted')],value='',description='All feeds?'),
     web.form.Button('Go')
 )
 
