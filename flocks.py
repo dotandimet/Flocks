@@ -246,7 +246,7 @@ def get_all_feed_titles(feed_dict=None):
     feed_dict = feed_dict or JsonDb(global_db,"feed")
     res = set()
     for k,v in feed_dict.items():
-        res.add(v['title'])
+        res.add(v['title'].lower())
     return res
 
 def flock_cachify(flock,feed_dict={},path=[]):
@@ -629,7 +629,7 @@ class view_editfeed:
             rtl = form.d.direction=='rtl'
             title = form.d.title.strip()
             feed_info = get_feed_info(url,feed_dict)
-            if title!=feed_info['title'] and title in get_all_feed_titles():
+            if title.lower()!=feed_info['title'].lower() and title.lower() in get_all_feed_titles():
                 title=u'{0} {1}'.format(title,datetime2str(now()).replace('T',' '))
                 flash('Warning! Feed was renamed to avoid conflicts!')
             feed_info.update(title=title,rtl=rtl,description=form.d.description)
@@ -682,7 +682,7 @@ class view_editflock:
             if not node or node.get('type')!='flock':
                 flash('Flock not found. This can happen if you logout. Please try again.')
                 return web.seeother('/')
-            if path and form.d.title != node['title']:
+            if path and form.d.title.lower() != node['title'].lower():
                 parent = flock_get(root,path[:-1])
                 if parent and subflock(parent,form.d.title):
                     flash('Duplicate name. Please try again')
@@ -716,7 +716,11 @@ class view_channel:
             for e in form_errors(form):
                 flash(e)
             raise web.seeother('/')
-        feed_info = get_feed_render_info(form.d.url)
+        feed_dict = JsonDb(global_db,"feed")
+        is_a_known_feed = feed_dict.has_key(form.d.url)
+        feed_info = get_feed_render_info(form.d.url,feed_dict)
+        if not is_a_known_feed: # ugly patch
+            feed_info['button_html'] = feed_info['button_html'].replace('Go','Reload')
         title = feed_info['title']
         description = urlize(feed_info.get('description',''))
         url = feed_info['url']
@@ -730,7 +734,7 @@ class view_channel:
         return render.timeline({
             'title':u'Channel: {0}'.format(title),'description':description,'feeds':[feed_info],
             'feed_url':url,'site_url':feed_info.get('link'),'not_in_flock':not_in_flock,'edit_form':edit_form,
-            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':True,'hide_feed':True,
+            'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':True,'hide_feed':is_a_known_feed,
             'max_feed_entries':MAX_SINGLE_FEED_ENTRIES,'feed_refresh_seconds':FEED_REFRESH_SECONDS})
 
 class view_channels:
