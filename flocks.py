@@ -563,6 +563,8 @@ def import_flockshare(fs,feed_dict=None):
     feeds = fs.get('feeds')
     for url in sanity['feeds']:
         if url in feed_urls: continue
+        feed = feeds.get(url)
+        if not feed: continue
         title = hard_strip(feed.get('title',url))
         if title.lower() in feed_titles:
             title = u' '.join(title,datetime2str(now()).replace('T',' ')) # the T messes up rtl :)
@@ -826,7 +828,7 @@ class view_editflock:
             if not err:
                 node.update(title=form.d.title,description=form.d.description)
                 save_root_flock(global_db,root)
-                flash("Flock '{0}' updated.".format(form.d.title))
+                flash(u"Flock '{0}' updated.".format(form.d.title))
                 feeds = map(get_feed_render_info,get_flock_feeds(node,respect_mutes=not form.d.show_mutes_tweak))
                 description = urlize(node.get('description',''))
                 form.fill(csrf_token=csrf_token(),flock=form.d.flock,
