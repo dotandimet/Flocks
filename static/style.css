@@ -235,14 +235,14 @@ div.page .toggler-label {
 /* expand/collapse toggler checkbox. Inspired by http://www.thecssninja.com/css/css-tree-menu */
 input.toggler {
     position:absolute;
-    top:17px; left:6px;
+    top:17px; left:4px;
 }
 
-ul.messages input.toggler { top:28px }
+ul.messages input.toggler { top:22px }
 
 .clipboard input.toggler { top:12px }
 
-.node-details input.toggler { top:8px; left:4px }
+.node-details input.toggler { top:10px }
 
 span.toggler-label {
     padding-left:20px
@@ -300,6 +300,7 @@ a.site-reference, a.feed-reference { text-decoration: underline; }
 
 .entry-description {
     margin-top:12px;
+    padding:0 4px;
 }
 
 ul.flashes {

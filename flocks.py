@@ -32,6 +32,7 @@ urls = (
     "/logout","view_logout",
     "/set_password","view_set_password",
     "/api/channel","view_api_channel",
+    "/favicon.ico","view_favicon",
 )
 
 app = web.application(urls, globals())
@@ -812,6 +813,10 @@ class view_set_password:
             form.inputs[1].attrs['class'] = '' # remove focusme
             form.inputs[1].description = ''
         return render.set_password({'form':form})
+
+class view_favicon:
+    def GET(self):
+        raise web.redirect('/static/favicon.ico')
 
 if __name__ == "__main__":
    app.run()
