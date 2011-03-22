@@ -1,0 +1,3 @@
+[submodule "webpy"]
+	path = webpy
+	url = https://github.com/thedod/webpy.git
