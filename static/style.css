@@ -26,10 +26,10 @@ input[type="text"],
 input[type="password"] {
     background: white;
     border: 1px solid #BFE6E2;
-    padding: 2px;
+    padding: 1px 3px;
     margin:0 2px;
     font-family: 'Trebuchet MS', sans-serif;
-    font-size: 14px;
+    font-size: 12px;
     -moz-border-radius: 3px;
     -webkit-border-radius: 3px;
     color: #105157;
@@ -41,7 +41,7 @@ a.internal-link, button {
     padding: 1px 3px;
     margin:0 2px;
     font-family: 'Trebuchet MS', sans-serif;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
     -moz-border-radius: 2px;
     -webkit-border-radius: 2px;
@@ -225,7 +225,7 @@ div.page div.clipboard ul.flock { background:none }
 
 div.page .toggler-label {
     background: #D0DAF9;
-    padding:10px 8px 8px 24px;
+    padding:10px 8px 8px 20px;
     border: none;
     line-height:36px;
     -moz-border-radius: 5px;
@@ -243,10 +243,6 @@ ul.messages input.toggler { top:22px }
 .clipboard input.toggler { top:12px }
 
 .node-details input.toggler { top:10px }
-
-span.toggler-label {
-    padding-left:20px
-}
 
 input.toggler + div {
     height: 0;

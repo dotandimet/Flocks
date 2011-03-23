@@ -1,7 +1,7 @@
 $def with (args)
 $ flock = args['flock']
 $var title: ${'Flock: '+flock.get('title','(untitled flock)')}
-$var description: ${flock.get('description','')}
+$var description: $:{urlize(flock.get('description',''))}
 $ extra_css = not account.is_logged_in() and ' guest-user' or ''
 $if args.get('scrollto'):
   <script type='text/javascript'>

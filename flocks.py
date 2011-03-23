@@ -505,6 +505,7 @@ render_globals = {
     'channels_form':channels_form,
     'custom_edit_form':custom_edit_form,
     'mini_edit_form':mini_edit_form,
+    'urlize':urlize,
     'csrf_token':csrf_token # to enable csrf_token() hidden fields
 }
 
@@ -548,7 +549,8 @@ def sanitize_node(node,path=[]):
         value = {'type':'flock','title':title, 'description':hard_strip(node.get('description'))}
         items = node.get('items')
         if type(items)!=type([]): return sanitizer_error('Invalid flock item list',path,title)
-        sanities = reduce(add_sanities,[sanitize_node(i,path+[title]) for i in items])
+        sanities = reduce(add_sanities,[sanitize_node(i,path+[title]) for i in items],
+            {'values':[],'feeds':set(),'errors':[]})
         value['items'] = sanities['values']
         return {'values':[value],'feeds':sanities['feeds'],'errors':sanities['errors']}
     else:
