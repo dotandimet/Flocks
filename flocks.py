@@ -346,8 +346,10 @@ def get_root_or_public_flock(db):
     jdb = JsonDb(db)
     if jdb.has_key('flock'):
         root = jdb['flock']
-    else:
-        root = import_flock_file(db,DEFAULT_FLOCK_FILENAME)
+    else: # No try/except here. If default file not found or corrupt, don't come crying :)
+        sanity = import_flockshare(json.load(file(DEFAULT_FLOCK_FILENAME)))
+        assert not sanity['errors'] and sanity['values'],"Invalid flock file {0}".format(DEFAULT_FLOCK_FILENAME)
+        root = sanity['values'][0]
         jdb['flock'] = root
     if global_account.is_logged_in():
         return root
@@ -546,7 +548,8 @@ def sanitize_node(node,path=[]):
     elif nodetype=='flock':
         title = hard_strip(node.get('title'))
         if not title: return sanitizer_error('No title for flock',path)
-        value = {'type':'flock','title':title, 'description':hard_strip(node.get('description'))}
+        value = {'type':'flock','title':title,
+                 'description':hard_strip(node.get('description')), 'mute':not not node.get('mute')}
         items = node.get('items')
         if type(items)!=type([]): return sanitizer_error('Invalid flock item list',path,title)
         sanities = reduce(add_sanities,[sanitize_node(i,path+[title]) for i in items],
@@ -582,20 +585,6 @@ def import_flockshare(fs,feed_dict=None):
         feed_titles.add(title)
         feed_urls.add(url)
     return sanity
-
-def import_feeds(node,feed_dict):
-    for k in import_dict.keys():
-        if k.startswith('feed:'):
-            url = k[len('feed:'):]
-            feed = feed_dict.get(url,{})
-            value = feed_info_merge({},feed) # sanitize whatever's in there
-            if not value.has_key('title'): value['title'] = url
-            feed_dict[url] = value
-
-def import_flock_file(db,filename):
-    imported = json.load(file(filename))
-    import_feeds(JsonDb(db,"feed"),imported)
-    return imported.get('flock')
 
 ### FlockShare export
 
