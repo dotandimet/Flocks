@@ -11,7 +11,7 @@ This makes the current version look like yet-another-feed-aggregator, but the di
 Flock view:
 <a target="_blank" href="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-root.jpg"><img border="0" height="100" src="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-root.jpg" alt="Flock view"></a>
 Timeline view:
-<a target="_blank" href="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-timeline.jpg"><img border="0" height="100" src="flocks-screenshot-timeline.jpg" alt="Timeline view"></a>
+<a target="_blank" href="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-timeline.jpg"><img border="0" height="100" src="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-timeline.jpg" alt="Timeline view"></a>
 
 ### Prerequisites:
 
