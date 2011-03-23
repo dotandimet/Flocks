@@ -754,6 +754,9 @@ class view_editfeed:
         raise web.seeother('/')
     @csrf_protected
     def POST(self):
+        if not global_account.is_logged_in():
+            flash("You're not logged in. Can't edit feed.")
+            raise web.seeother('/')
         form = edit_feed_form()
         err = False
         if form.validates():
@@ -795,6 +798,9 @@ class view_newflock:
         return render.editflock({'form':form,'import_form':import_form,'new':True})
     @csrf_protected
     def POST(self):
+        if not global_account.is_logged_in():
+            flash("You're not logged in. Can't add flock.")
+            raise web.seeother('/')
         form = edit_flock_form()
         if form.validates():
             set_clipboard({'type':'flock','title':form.d.title,'description':form.d.description,'items':[]})
@@ -812,6 +818,9 @@ class view_editflock:
         raise web.seeother('/')
     @csrf_protected
     def POST(self):
+        if not global_account.is_logged_in():
+            flash("You're not logged in. Can't edit flock.")
+            raise web.seeother('/')
         form = edit_flock_form()
         err = False
         if form.validates():
