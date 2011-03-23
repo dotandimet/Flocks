@@ -1,4 +1,4 @@
-## ![Logo V0.0](flocks-75x75.png "Feel free to send me a nicer logo :)") Flocks - Not all eggs in the same nest
+## ![Logo V0.0](https://github.com/thedod/Flocks/raw/master/flocks-75x75.png "Feel free to send me a nicer logo :)") Flocks - Not all eggs in the same nest
 
 _Flocks_ is [yet another attempt](http://r2.reallysimple.org/howto/radio2/) to go back from centralized [social networking services](https://secure.wikimedia.org/wikipedia/en/wiki/Social_networking_service) to decentralized [microblogging](https://secure.wikimedia.org/wikipedia/en/wiki/Microblogging).
 
@@ -9,9 +9,9 @@ This makes the current version look like yet-another-feed-aggregator, but the di
 ### Screenshots:
 
 Flock view:
-<a target="_blank" href="flocks-screenshot-root.jpg"><img border="0" height="100" src="flocks-screenshot-root.jpg" alt="Flock view"></a>
+<a target="_blank" href="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-root.jpg"><img border="0" height="100" src="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-root.jpg" alt="Flock view"></a>
 Timeline view:
-<a target="_blank" href="flocks-screenshot-timeline.jpg"><img border="0" height="100" src="flocks-screenshot-timeline.jpg" alt="Timeline view"></a>
+<a target="_blank" href="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-timeline.jpg"><img border="0" height="100" src="flocks-screenshot-timeline.jpg" alt="Timeline view"></a>
 
 ### Prerequisites:
 
@@ -55,7 +55,7 @@ The main reason for keeping flock information hard to get (even if not "100% sec
 
 For that reason - almost all http requests in _Flocks_ are POST and not GET, to avoid leakage of details about my flock via browser history or as HTTP_REFERER to sites. These urls don't reveal much, but if an adversary collects enough of them from enough people, this is cluster-analysis food).
 
-This means that if you reload the page or use the back button, it makes _Flocks suspect a [CSRF attack](https://secure.wikimedia.org/wikipedia/en/wiki/Csrf). Nothing serious happens. You simply get redirected to the home page with a warning about a "stale browser page". Since almost everything is a click away, I hope this isn't _too much_ of a nuisance. Note that the homepage itself _can_ be reloaded without problems.
+This means that if you reload the page or use the back button, it makes _Flocks_ suspect a [CSRF attack](https://secure.wikimedia.org/wikipedia/en/wiki/Csrf). Nothing serious happens. You simply get redirected to the home page with a warning about a "stale browser page". Since almost everything is a click away, I hope this isn't _too much_ of a nuisance. Note that the homepage itself _can_ be reloaded without problems.
 
 An additional nuisance (that I hope to fix eventually) is that you can't use _Flocks_ on more than a single browser tab (nothing bad happens if you do - you just get a redirection and warning). This is not inheret to CSRF protection, but happens because at the moment, the CSRF protection algorithm is pretty lame, and prefers to err on the safe side ;)
 
