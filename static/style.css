@@ -26,7 +26,7 @@ input[type="text"],
 input[type="password"] {
     background: white;
     border: 1px solid #BFE6E2;
-    padding: 1px 3px;
+    padding: 1px 2px;
     margin:0 2px;
     font-family: 'Trebuchet MS', sans-serif;
     font-size: 12px;
@@ -34,6 +34,7 @@ input[type="password"] {
     -webkit-border-radius: 3px;
     color: #105157;
 }
+select { font-size:10px }
 
 a.internal-link, button {
     background: #105157;
@@ -62,8 +63,8 @@ div.clipboard {
     -webkit-border-radius: 5px;
 }
 
-form.login-menu { float:right; margin-left:4px; line-height:36px }
-form.inline-form,form.inline-with-labels { display:inline; line-height:36px }
+form.login-menu { float:right; margin-left:4px; line-height:32px }
+form.inline-form,form.inline-with-labels { display:inline; line-height:32px }
 .clipboard form.inline-form { line-height: 18px }
 form.inline-form { padding-left:4px; border-left: groove 2px; }
 .rtl form.inline-form { padding-right:4px; border-right: groove 2px; border-left:none }
@@ -227,7 +228,7 @@ div.page .toggler-label {
     background: #D0DAF9;
     padding:10px 8px 8px 20px;
     border: none;
-    line-height:36px;
+    line-height:32px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
 }
@@ -238,7 +239,7 @@ input.toggler {
     top:17px; left:4px;
 }
 
-ul.messages input.toggler { top:22px }
+ul.messages input.toggler { top:19px; left:2px }
 
 .clipboard input.toggler { top:12px }
 
@@ -277,7 +278,7 @@ div.item-time {
 
 div.node-details {
     position:relative; /* enable input.toggler position:absolute trickery */
-    line-height:36px;
+    line-height:32px;
     margin-bottom: 4px }
 
 .clipboard div.node-details { line-height: 18px }
