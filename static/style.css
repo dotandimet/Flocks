@@ -26,7 +26,7 @@ input[type="text"],
 input[type="password"] {
     background: white;
     border: 1px solid #BFE6E2;
-    padding: 1px 2px;
+    padding: 1px 3px;
     margin:0 2px;
     font-family: 'Trebuchet MS', sans-serif;
     font-size: 12px;
@@ -39,7 +39,7 @@ select { font-size:10px }
 a.internal-link, button {
     background: #105157;
     border: 1px solid #073B36;
-    padding: 1px 3px;
+    padding: 1px 2px;
     margin:0 2px;
     font-family: 'Trebuchet MS', sans-serif;
     font-size: 12px;
@@ -49,7 +49,7 @@ a.internal-link, button {
     color: white !important;
 }
 
-button { font-family: Courier New }
+button { font-family: Courier New; position:relative; top:-1px }
 
 a.internal-link:hover, button:hover {
     background: #20A2AE;
@@ -212,8 +212,8 @@ div.page .clipboard ul.flock { margin-top:4px }
 
 div.page ul.flock li {
     position:relative; /* enable input.toggler position:absolute trickery */
-    margin: 0 0 4px 20px;
-    padding: 10px 5px 5px;
+    margin: 0 0 2px 20px;
+    padding: 5px 5px 2px;
 }
 div.page .clipboard ul.flock li { padding-top:4px }
 
@@ -236,14 +236,12 @@ div.page .toggler-label {
 /* expand/collapse toggler checkbox. Inspired by http://www.thecssninja.com/css/css-tree-menu */
 input.toggler {
     position:absolute;
-    top:17px; left:4px;
+    top:10px; left:6px;
 }
 
-ul.messages input.toggler { top:19px; left:2px }
-
-.clipboard input.toggler { top:12px }
-
-.node-details input.toggler { top:10px }
+.clipboard input.toggler { top:10px }
+.node-details input.toggler { left:2px }
+ul.messages input.toggler { top:19px; left:1px }
 
 input.toggler + div {
     height: 0;
