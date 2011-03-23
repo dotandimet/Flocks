@@ -768,7 +768,7 @@ class view_editfeed:
             form.fill(csrf_token=csrf_token(),url=url,title=title,
                 direction=form.d.direction,description=form.d.description)
             not_in_flock = not (url in get_flock_feeds(get_root_or_public_flock(global_db)))
-            return render.timeline({'title':u'Channels: {0}'.format(feed_info['title']),
+            return render.timeline({'title':u'Channel: {0}'.format(feed_info['title']),
                 'description':description,'feeds':[get_feed_render_info(url)],
                 'feed_url':url,'site_url':feed_info.get('link'),'not_in_flock':not_in_flock,
                 'max_page_entries':MAX_PAGE_ENTRIES,'expand_all_entries':True,'hide_feed':True,'edit_form':form,
