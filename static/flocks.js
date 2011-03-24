@@ -50,7 +50,7 @@ window.populate_from_feed=function(ul,data) {
                 ul.append(li);
             }
         };
-        ul.find('li:gt('+window.MAX_PAGE_ENTRIES+')').remove();
+        ul.children(':gt('+(window.MAX_PAGE_ENTRIES-1)+')').remove();
     }
 }
 
