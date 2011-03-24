@@ -1,3 +1,4 @@
+// Called each time there's new content
 window.tweak_content=function() {
     var anchor=location.hash;
     if (anchor) {
@@ -5,12 +6,18 @@ window.tweak_content=function() {
     }
     $('a:not(.internal-link)').attr('target','_blank');
 }
+
+// The "OnLoad"
 $(function() {
     $.manageAjax.create('flocks',{queue:true}); 
     $('.flashes li').each(function() {
         $(this).prepend($('<a/>').attr('href','#').click(function() {
             $(this).parent().remove(); return false;}).addClass(
                 'internal-link important').append('<b/>').text('X')).css('opacity',.9)});
+    $('body').append($('<a/>').attr('id','top-link').attr('href','#').addClass('internal-link').click(function() {
+     	$('html,body').animate({scrollTop:0},'slow');
+        return false;
+    }).html('&#11014; Top'));
     window.tweak_content();
     $('.focusme:first').focus();
     $('#feed-url, #flockshare').click(function() {$(this).select()});

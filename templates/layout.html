@@ -29,8 +29,8 @@ $ homepath = ctx.homepath
       <div class=navigation>
         $if account.is_logged_in():
           <form class="login-menu" method=post action="$homepath/logout">
-            $if not rendered.get('is_password_page'):
-              <a class=internal-link href="$homepath/set_password">Change password</a>
+            $if not rendered.get('is_settings_page'):
+              <a class=internal-link href="$homepath/settings">Settings</a>
             $:logout_form({'csrf_token':csrf_token()}).render_css()
           </form>
         $elif not rendered.get('is_login_page'):
@@ -42,8 +42,11 @@ $ homepath = ctx.homepath
                 $:login_form({'csrf_token':csrf_token()}).render_css()
             </form>
         <a class=internal-link href="$homepath/">Home</a>
+        <a class=internal-link href="$homepath/newflock">New</a>
+        <form class='inline-form important-button' method=post action="$homepath/channels">
+          $:channels_form({'csrf_token':csrf_token(),'flock':''}).render_css()
+        </form>
         $if account.is_logged_in() and not rendered.get('is_new_flock_page'):
-          <a class=internal-link href="$homepath/newflock">New flock</a>
         $if not rendered.get('no_feed_form'):
           <form class="inline-with-labels" method=post action="$homepath/channel">
             $code:

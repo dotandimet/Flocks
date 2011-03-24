@@ -29,7 +29,7 @@ urls = (
     "/editfeed", "view_editfeed",
     "/login","view_login",
     "/logout","view_logout",
-    "/set_password","view_set_password",
+    "/settings","view_settings",
     "/api/channel","view_api_channel",
     "/favicon.ico","view_favicon",
 )
@@ -329,7 +329,7 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
             'modified':feed_modified,
             'etag':etag,
             'entries':[{'id':'i{0}'.format(hash((url,e.link))),'title':e.title.strip() or '(untitled)', 'link':e.link,
-                        'description':e.description, 'modified':timestruct2str(e.updated_parsed),
+                        'description':e.get('description',''), 'modified':timestruct2str(e.updated_parsed),
                         'friendly_time':timestruct2friendly(e.updated_parsed),
                         # add feed info in case we put the entry in a multi-channel timeline
                         'feed_url':url,'feed_title':feed_info['title'],
@@ -382,14 +382,14 @@ logout_form = web.form.Form(
     web.form.Hidden('csrf_token'),
     web.form.Button('Logout'))
 
-password_form = web.form.Form(
+settings_form = web.form.Form(
     web.form.Hidden("csrf_token"),
     web.form.Password("oldpass",description="Old password",tabindex=100,class_='focusme'),
     web.form.Password("newpass",
         web.form.Validator("must be at least 8 characters",lambda x:len(x)>=8),
         description="New password",tabindex=101,class_='focusme'),
     web.form.Password("newagain",description="New password again",tabindex=102),
-    web.form.Button("Update password",tabindex=103),
+    web.form.Button("Save",tabindex=103),
     validators = [
         web.form.Validator("Passwords didn't match.", lambda i: i.newpass==i.newagain)
     ]
@@ -930,24 +930,24 @@ class view_logout:
         flash('Goodbye.')
         raise web.seeother('/')
 
-class view_set_password:
+class view_settings:
     def GET(self):
         if not (global_account.is_logged_in() or global_account.is_new()):
             flash("You're not logged in. Can't change your password.")
             raise web.seeother('/')
-        form = password_form()
+        form = settings_form()
         form.fill(csrf_token=csrf_token(),oldpass='',newpass='',newagain='')
         if global_account.is_new():
             form.inputs[1].attrs['style'] = 'display:none' # hide oldpass
             form.inputs[1].attrs['class'] = '' # remove focusme
             form.inputs[1].description = ''
-        return render.set_password({'form':form})
+        return render.settings({'form':form})
     @csrf_protected
     def POST(self):
-        form=password_form()
+        form=settings_form()
         if form.validates():
             if global_account.change_password(form.d.oldpass,form.d.newpass):
-                flash("Your password was saved.")
+                flash("Your settings were saved.")
                 raise web.seeother('/')
             flash("Incorrect password. Try again.")
         form.fill(csrf_token=csrf_token(),oldpass='',newpass='',newagain='')
@@ -955,7 +955,7 @@ class view_set_password:
             form.inputs[1].attrs['style'] = 'display:none' # hide oldpass
             form.inputs[1].attrs['class'] = '' # remove focusme
             form.inputs[1].description = ''
-        return render.set_password({'form':form})
+        return render.settings({'form':form})
 
 class view_favicon:
     def GET(self):

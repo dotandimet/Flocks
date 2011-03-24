@@ -327,7 +327,13 @@ div.error {
     font-size: 13px;
 }
 
-.important, a.important {
+#top-link {
+    position:fixed;
+    bottom:0;
+    right:0
+}
+
+.important, a.important, .important-button button {
     font-size:125%;
     background:#F00 !important;
     color:#FFF !important;
