@@ -30,7 +30,7 @@ You can also use my tweaked fork of wepby by doing (from this folder):
 
     git submodule update --init
 
-The only difference is that this version doesn't log all sql messages to stdout in debug mode (unless you set `DEBUG_SQL` to `True` at `flocks.py`).
+The only difference is that in this version you can suppress sql logging to stdout in debug mode (see `DEBUG_SQL` at `flocks.py`).
 
 ### Running _Flocks_:
 
