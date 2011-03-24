@@ -127,12 +127,12 @@ example:
         self.namespace = namespace
         self.table = "jsondb_{0}".format(self.namespace)
         # Don't know why web.database.query doesn't work well with create table :(
-        self.db.query('create table if not exists {0} (key text unique,value blob)'.format(self.table),_test=False)
+        self.db.query('create table if not exists {0} (key text unique,value blob)'.format(self.table))
         self.update(kwargs)
     def keys(self):
         return [r.key for r in self.db.select(self.table,what='key')]
     def _get(self,key):
-        return list(self.db.select(self.table,what='value',where='key=$k',vars={'k':key},_test=False))
+        return list(self.db.select(self.table,what='value',where='key=$k',vars={'k':key}))
     def has_key(self,key):
         return not not self._get(key)
     def __getitem__(self,key):
@@ -143,12 +143,12 @@ example:
     def __delitem__(self,key):
         if not self.has_key(key):
             raise KeyError,key
-        self.db.delete(self.table,where='key=$k',vars={'k':key},_test=False)
+        self.db.delete(self.table,where='key=$k',vars={'k':key})
     def __setitem__(self,key,value):
         if self.has_key(key):
-            self.db.update(self.table,where='key=$k',vars={'k':key},value=json.dumps(value),_test=False)
+            self.db.update(self.table,where='key=$k',vars={'k':key},value=json.dumps(value))
         else:
-            self.db.insert(self.table,key=key,value=json.dumps(value),_test=False)
+            self.db.insert(self.table,key=key,value=json.dumps(value))
     def __repr__(self):     
         return '<JsonDB {0}:{1} {2}>'.format(`self.db`,`self.namespace`,`self.keys()`)
 
