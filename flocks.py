@@ -601,12 +601,10 @@ def export_flockshare(flock,feed_dict=None):
 
 
 class view_api_channel:
-    def PUT(self):
+    def POST(self):
         web.header('Content-Type', 'application/json')
         url = web.input().get('url')
         return json.dumps(feed_fetch(url,JsonDb(global_db,"cache"),JsonDb(global_db,"feed")))
-    def GET(self): ### temporary
-        return self.PUT()
 
 ### HTML views
 class view_index:

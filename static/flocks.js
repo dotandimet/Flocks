@@ -60,6 +60,7 @@ window.fetch_from_feed=function(ul_id,feed_title,feed_url) {
     $('#loading-list').append(loading);
     $.manageAjax.add('flocks',{
         url:window.AJAX_FEED_URL,
+        type:'POST',
         data:{url:feed_url},
         ul:ul,
         refresh:"window.fetch_from_feed('"+ul_id+"','"+feed_title+"','"+feed_url+"')",
