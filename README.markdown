@@ -40,18 +40,18 @@ And then browse to `http://127.0.0.1:6378/` (6387 is _nest_ on a phone's keypad)
 
 ### Privacy, threats, and nuisances:
 
-First time you run _Flocks_, it creates `flocks.db`, and asks you to "own your nest" (i.e. set a password). Some of the functionality is only available when you're logged in. Another difference is that when you're logged out, you only see the top-level flock called [case insensitive] `Public` (if there is one).
+First time you run _Flocks_, it creates `flocks.db`, and asks you to "own your nest" (i.e. set a password). Some of the functionality is only available when you're logged in. Another difference is that when you're logged out, you only see the top-level flock called [case insensitive] `FlockRoll` (if there is one).
 
 Note that this is a _single account_ system (no username. Only a password): If your sister wants to run her own _Flocks_ app on your PC, she should copy the folder, remove `flocks.db`, and set up her own nest.
 
 This may lead to an **illusion of privacy**, since [at the moment] the content of `flocks.db` is _not_ encrypted (except for the password). This means that if your adversaries gets a copy of that file (physical access, trojans, court order, etc.), they can see what feeds you're interested in, how you call them, etc.
 
-This means that you can show your public flock to people in logged-out mode (without leaving your computer unattended) and they probably wouldn't be able to know what feeds you use for the scoop you're working on, or that you're interested in knitting :).
+This means that you can show your FlockRoll to people in logged-out mode (without leaving your computer unattended) and they probably wouldn't be able to know what feeds you use for the scoop you're working on, or that you're interested in knitting :).
  You _shouldn't_ - however - use _Flocks_ to browse to the feed of a rebel nest in onion land  unless your disk is encrypted and your computer is bullet-proof (i.e. never :) ). Even if you don't add the feed to your flock, the url can be recovered from your `flocks.db`.
 
 #### Nuisances [as promised]:
 
-The main reason for keeping flock information hard to get (even if not "100% secure") is to minimize the ability of others to analyze your [social network](https://secure.wikimedia.org/wikipedia/en/wiki/Social_network). As opposed to the paradigm of "following" or "befriending" peers in centralized social networks, I don't think I should make it public what I _watch_ (just like I don't upload my browser history), only what I _recommend_ (i.e. my public flock - that is also published as part of my _nest_ anyway).
+The main reason for keeping flock information hard to get (even if not "100% secure") is to minimize the ability of others to analyze your [social network](https://secure.wikimedia.org/wikipedia/en/wiki/Social_network). As opposed to the paradigm of "following" or "befriending" peers in centralized social networks, I don't think I should make it public what I _watch_ (just like I don't upload my browser history), only what I _recommend_ (i.e. my FlockRoll that is also published as part of my _nest_ anyway).
 
 For that reason - almost all http requests in _Flocks_ are POST and not GET, to avoid leakage of details about my flock via browser history or as HTTP_REFERER to sites. These urls don't reveal much, but if an adversary collects enough of them from enough people, this is cluster-analysis food).
 
