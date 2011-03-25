@@ -1,13 +1,16 @@
 $def with (args)
 $ flock = args['flock']
-$var title: ${'Flock: '+flock.get('title','(untitled flock)')}
-$var description: $:{urlize(flock.get('description',''))}
-$ extra_css = not account.is_logged_in() and ' guest-user' or ''
+$ profile = account.get_profile()
+$ is_logged_in = account.is_logged_in()
+$ is_new = account.is_new()
+$var title: ${(is_logged_in and 'Home: ' or 'FlockRoll: ')+profile['title']}
+$var description: $:{urlize(profile.get('description',''),nofollow=False)}
+$ extra_css = not is_logged_in and ' guest-user' or ''
 $if args.get('scrollto'):
   <script type='text/javascript'>
     window.SCROLLTO="$args['scrollto']";
   </script>
-$if account.is_logged_in() and args.get('clipboard'):
+$if is_logged_in and args.get('clipboard'):
   $ clearbutton = mini_edit_form({'csrf_token':csrf_token(),'verb':'clearcb'}).render_css()
   <div class=clipboard>
     <span id="clipboard">Clipboard <form class=inline-form method=post action=''>$:clearbutton <button>Clear</button></form></span>

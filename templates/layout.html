@@ -42,11 +42,11 @@ $ homepath = ctx.homepath
                 $:login_form({'csrf_token':csrf_token()}).render_css()
             </form>
         <a class=internal-link href="$homepath/">Home</a>
-        <a class=internal-link href="$homepath/newflock">New</a>
         <form class='inline-form important-button' method=post action="$homepath/channels">
           $:channels_form({'csrf_token':csrf_token(),'flock':''}).render_css()
         </form>
         $if account.is_logged_in() and not rendered.get('is_new_flock_page'):
+          <a class=internal-link href="$homepath/newflock">New</a>
         $if not rendered.get('no_feed_form'):
           <form class="inline-with-labels" method=post action="$homepath/channel">
             $code:

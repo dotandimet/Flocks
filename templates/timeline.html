@@ -19,7 +19,7 @@ $if args.has_key('feed_url'):
           </form>
         </div>
       $if args.has_key('site_url'):
-        <a class="site-reference" href="$args['site_url']">Site</a>,
+        <a class="site-reference" nofollow="true" href="$args['site_url']">Site</a>,
       <span class="feed-reference">
         <label for="feed-url">Feed:</label>
         <input id="feed-url" readonly=readonly value="$args['feed_url']">

@@ -4,7 +4,6 @@
 DEBUG = True
 DEBUG_SQL = False
 DB_FILENAME = 'flocks.db'
-DEFAULT_FLOCK_FILENAME = 'default_flock.js'
 LOGIN_TIMEOUT_SECONDS = 3600 # 1 hour.
 FEED_REFRESH_SECONDS = 120 # delay (for each feed) between javascript fetches
 FEED_CACHE_TIMEOUT = 180 # Some feeds are etag and last-modified deaf/dumb
@@ -12,6 +11,12 @@ MAX_PAGE_ENTRIES = 50
 MAX_SINGLE_FEED_ENTRIES = 50
 MAX_FLOCK_FEED_ENTRIES = 10
 HTTP_PORT = 6378 # "Nest" on phone keyboard
+PROFILE_DEFAULTS = {
+    "title":"My nest",
+    "description":"IM IN UR SOSHAL. More about me: https://secure.wikimedia.org/wikipedia/en/wiki/Human",
+    "url":"http://example.org/mynest/"
+}
+DEFAULT_FLOCK_FILENAME = 'default_flock.js'
 ###
 
 import web
@@ -161,7 +166,12 @@ Methods:
     is_logged_in()
     login(password)
     logout()
-    change_password(oldpass,newpass) - oldpass is ignored if is_new()"""
+    check_password(password)
+    get_profile() - returns dict with nest title, etc.
+Public methods that start with _ (can't be called from a template):
+    _change_password(oldpass,newpass) - oldpass is ignored if is_new()
+    _set_profile(dict)"""
+    profile_keys = ['title','description','url']
     def __init__(self,db,auto_logout_seconds=3600):
         self.jdb = JsonDb(db,"sam")
         self.timeout = seconds2delta(auto_logout_seconds)
@@ -186,12 +196,12 @@ Methods:
     def _renew_lease(self):
         global_session['sam_expires'] = datetime2str(now()+self.timeout)
     
-    def _check_password(self,password):
+    def check_password(self,password):
         import hmac
         return hmac.new(self.jdb['key'].decode('hex'),password).hexdigest()==self.jdb['passhash']
 
     def login(self,password):
-        if self._check_password(password):
+        if self.check_password(password):
             self._renew_lease()
             return True
         self.logout()
@@ -201,9 +211,9 @@ Methods:
         if global_session.has_key('sam_expires'):
             del global_session['sam_expires']
 
-    def change_password(self,oldpass,newpass):
+    def _change_password(self,oldpass,newpass):
         "oldpass is ignored if self.is_new()"
-        if self.is_new() or self._check_password(oldpass):
+        if self.is_new() or self.check_password(oldpass):
             import hmac
             from os import urandom
             key = urandom(20)
@@ -213,6 +223,17 @@ Methods:
             self._renew_lease()
             return True
         return False
+    
+    def get_profile(self):
+        p = {}
+        for k in self.profile_keys:
+            p[k]=self.jdb.get(k,PROFILE_DEFAULTS[k])
+        return p
+
+    def _set_profile(self,profile):
+        for k in self.profile_keys:
+            if profile.has_key(k):
+                self.jdb[k]=profile[k]
     
 ### Flock functions
 def flockslug(obj):
@@ -353,7 +374,7 @@ def get_root_or_public_flock(db):
         jdb['flock'] = root
     if global_account.is_logged_in():
         return root
-    return subflock(root,'public') or {'type':'flock','title':'No public flock','items':[]}
+    return subflock(root,'flockroll') or {'type':'flock','title':'User has no public FlockRoll','items':[]}
 
 def save_root_flock(db,flock):
     JsonDb(db)['flock'] = flock
@@ -384,12 +405,15 @@ logout_form = web.form.Form(
 
 settings_form = web.form.Form(
     web.form.Hidden("csrf_token"),
-    web.form.Password("oldpass",description="Old password",tabindex=100,class_='focusme'),
+    web.form.Password("oldpass",description="Current password",tabindex=100,class_='focusme'),
     web.form.Password("newpass",
-        web.form.Validator("must be at least 8 characters",lambda x:len(x)>=8),
+        web.form.Validator("must be at least 8 characters",lambda x:not x or len(x)>=8),
         description="New password",tabindex=101,class_='focusme'),
     web.form.Password("newagain",description="New password again",tabindex=102),
-    web.form.Button("Save",tabindex=103),
+    web.form.Textbox("title",web.form.notnull,description="Nest's name",size=23,tabindex=103),
+    web.form.Textbox("description",description="Description/bio",size=80,tabindex=104),
+    web.form.Textbox("url",description="Nest's url",size=80,tabindex=104),
+    web.form.Button("Save",tabindex=105),
     validators = [
         web.form.Validator("Passwords didn't match.", lambda i: i.newpass==i.newagain)
     ]
@@ -490,8 +514,8 @@ def get_feed_render_info(url,feed_dict=None):
                 web.url('/channel'), urlquote(channel_form({'csrf_token':csrf_token(),'url':url}).render_css())))
 
 import jinja2util
-def urlize(s):
-    return jinja2util.urlize(s,nofollow=True)
+def urlize(s,nofollow=True):
+    return jinja2util.urlize(s,nofollow=nofollow,trim_url_limit=32)
 
 
 ### Render objects
@@ -936,7 +960,7 @@ class view_settings:
             flash("You're not logged in. Can't change your password.")
             raise web.seeother('/')
         form = settings_form()
-        form.fill(csrf_token=csrf_token(),oldpass='',newpass='',newagain='')
+        form.fill(dict(global_account.get_profile(),csrf_token=csrf_token()))
         if global_account.is_new():
             form.inputs[1].attrs['style'] = 'display:none' # hide oldpass
             form.inputs[1].attrs['class'] = '' # remove focusme
@@ -946,12 +970,17 @@ class view_settings:
     def POST(self):
         form=settings_form()
         if form.validates():
-            if global_account.change_password(form.d.oldpass,form.d.newpass):
+            if global_account.is_new() or global_account.check_password(form.d.oldpass):
+                if form.d.newpass:
+                    global_account._change_password(form.d.oldpass,form.d.newpass)
+                global_account._set_profile({'title':form.d.title,'description':form.d.description,'url':form.d.url})
                 flash("Your settings were saved.")
                 raise web.seeother('/')
             flash("Incorrect password. Try again.")
-        form.fill(csrf_token=csrf_token(),oldpass='',newpass='',newagain='')
-        if global_account.is_new():
+        form.inputs[0].value = csrf_token()
+        for i in range(3): # Don't leak passwords to html source :)
+            form.inputs[i+1].value = ''
+        if global_account.is_new(): # no use asking for current password
             form.inputs[1].attrs['style'] = 'display:none' # hide oldpass
             form.inputs[1].attrs['class'] = '' # remove focusme
             form.inputs[1].description = ''
