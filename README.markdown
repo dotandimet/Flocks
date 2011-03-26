@@ -24,14 +24,6 @@ Timeline view:
 
     sudo apt-get install python-sqlite python-feedparser python-webpy
 
-#### Optional web.py tweak
-
-You can also use my tweaked fork of wepby by doing (from this folder):
-
-    git submodule update --init
-
-The only difference is that in this version you can suppress sql logging to stdout in debug mode (see `DEBUG_SQL` at `flocks.py`).
-
 ### Running _Flocks_:
 
     python flocks.py
