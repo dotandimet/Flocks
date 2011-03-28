@@ -1,0 +1,26 @@
+$def with (args)
+$ profile = account.get_profile()
+$var title: $profile['title']
+$var description: $:urlize(profile['description'],nofollow=False)
+$var extra_head: $:{args['feed_url'] and '<link rel="alternate" type="application/rss+xml" title="RSS" href="{0}">'.format(args['feed_url']) or ''}
+
+<div class="feed-reference">
+  <a href="$args['feed_url']">Feed</a>:
+  <input id="feed-url" readonly=readonly value="$args['feed_url']">
+</div>
+
+$if args['entries']:
+  <ul class="messages">
+    $for entry in args['entries']:
+       <li id='$entry["id"]' class=feed-entry>
+         <div class=toggler-label>
+           <div class=item-time>$entry['modified']</div>
+           <a class='entry-title noborder' href='$entry["link"]'>$entry['title']</a>
+           <a class=anchor-link href='#$entry["id"]'>#</a>
+         </div>
+         <input type=checkbox class=toggler>
+         <div class=entry-description>$:urlize(entry['description'],nofollow=False)</div>
+       </li>
+  </ul>
+$else:
+    No posts [yet?]

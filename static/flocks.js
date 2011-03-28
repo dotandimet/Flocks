@@ -1,10 +1,6 @@
 // Called each time there's new content
 window.tweak_content=function() {
-    var anchor=location.hash;
-    if (anchor) {
-        $(anchor).addClass('hilite').focus();
-    }
-    $('a:not(.internal-link)').attr('target','_blank');
+    $('a:not(.internal-link, .anchor-link)').attr('target','_blank');
 }
 
 // The "OnLoad"
@@ -18,9 +14,9 @@ $(function() {
      	$('html,body').animate({scrollTop:0},'slow');
         return false;
     }).html('&#11014; Top'));
-    window.tweak_content();
-    $('.focusme:first').focus();
     $('#feed-url, #flockshare').click(function() {$(this).select()});
+    $('.focusme:first').focus();
+    window.tweak_content();
     if (window.SCROLLTO!=undefined && window.SCROLLTO) {
      	$('html,body').animate({scrollTop: $("#"+window.SCROLLTO).offset().top-60},'slow');
     }

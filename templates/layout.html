@@ -29,6 +29,10 @@ $ homepath = ctx.homepath
       <div class=navigation>
         $if account.is_logged_in():
           <form class="login-menu" method=post action="$homepath/logout">
+            $if rendered.get('is_nest_page'):
+              <a class='internal-link important' href="$homepath/nest">Refresh</a>
+            $else:
+              <a class='internal-link important' href="$homepath/nest">Nest</a>
             $if not rendered.get('is_settings_page'):
               <a class=internal-link href="$homepath/settings">Settings</a>
             $:logout_form({'csrf_token':csrf_token()}).render_css()
@@ -61,7 +65,7 @@ $ homepath = ctx.homepath
       $:rendered
       </div>
       <div class=footer>
-        Flocks &mdash; A <a target="_blank" href="http://webpy.org/">Web.Py</a> Application.
+        <a href="https://github.com/thedod/Flocks#readme">Flocks</a> &mdash; <em>Not all eggs in the same nest</em> &mdash; A <a href="http://webpy.org/">Web.Py</a> application.
       </div>
     </div>
   </body>

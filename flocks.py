@@ -14,9 +14,12 @@ HTTP_PORT = 6378 # "Nest" on phone keyboard
 PROFILE_DEFAULTS = {
     "title":"My nest",
     "description":"IM IN UR SOSHAL. More about me: https://secure.wikimedia.org/wikipedia/en/wiki/Human",
-    "url":"http://example.org/mynest/"
+    "link":"http://example.com/mynest"
 }
 DEFAULT_FLOCK_FILENAME = 'default_flock.js'
+NEST_TEMPLATES = 'default-nest-theme'
+NEST_OUTPUT_FOLDER = 'nest' # under static/ (so that we can preview it)
+NEST_FEED_FILENAME = 'rss.xml'
 ###
 
 import web
@@ -27,6 +30,9 @@ web.config.debug_sql = DEBUG_SQL # This only works for a tweaked version of web.
 
 urls = (
     "/", "view_index",
+    "/nest", "view_nest",
+    "/delpost", "view_delpost",
+    "/publish", "view_publish",
     "/channel", "view_channel",
     "/channels", "view_channels",
     "/newflock", "view_newflock",
@@ -171,7 +177,7 @@ Methods:
 Public methods that start with _ (can't be called from a template):
     _change_password(oldpass,newpass) - oldpass is ignored if is_new()
     _set_profile(dict)"""
-    profile_keys = ['title','description','url']
+    profile_keys = ['title','description','link']
     def __init__(self,db,auto_logout_seconds=3600):
         self.jdb = JsonDb(db,"sam")
         self.timeout = seconds2delta(auto_logout_seconds)
@@ -349,7 +355,8 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
             'expires':datetime2str(now()+seconds2delta(FEED_CACHE_TIMEOUT)),
             'modified':feed_modified,
             'etag':etag,
-            'entries':[{'id':'i{0}'.format(hash((url,e.link))),'title':e.title.strip() or '(untitled)', 'link':e.link,
+            'entries':[{'guid':e.get('id','#g'.join((e.link,str(hash((url,e.title.strip().lower(),e.link)))))),
+                        'title':e.title.strip() or '(untitled)', 'link':e.link,
                         'description':e.get('description',''), 'modified':timestruct2str(e.updated_parsed),
                         'friendly_time':timestruct2friendly(e.updated_parsed),
                         # add feed info in case we put the entry in a multi-channel timeline
@@ -357,9 +364,64 @@ def feed_fetch(url,cache_dict={},feed_dict={}):
                         'feed_link':feed_info['link'],'feed_rtl':feed_info.get('rtl')
                        } for e in parsed.entries],
         }
+        for e in cache['entries']: e['id'] = 'egg{0}'.format(hash(e['guid'])) # Used for DOM anchors
         cache.update(feed_info)
         cache_dict[url] = cache
     return cache_dict[url] # might throw an error (e.g. if bad url)
+
+### Nest functions
+def get_outbox(db):
+    entries = JsonDb(db).get('outbox',[])
+    profile = global_account.get_profile()
+    feed_link = profile['link']
+    return [dict(e, link=e['link'] or '/#'.join((feed_link,e['id']))) for e in entries]
+    
+def set_outbox(db,outbox): JsonDb(db)['outbox'] = outbox
+
+def add_post(db,title,description='',link=''):
+    guid = '/#g'.join((global_account.get_profile()['link'],str(hash((title.strip().lower(),link)))))
+    item_anchor = 'egg{0}'.format(hash(guid))
+    jdb = JsonDb(db)
+    entry = { 'guid':guid, 'id':item_anchor, 'modified':now().ctime(),
+        'title':title.strip(),'description':description.strip(),'link':link }
+    jdb['outbox'] = [entry] + jdb.get('outbox',[])
+    return entry
+
+def del_post(db,post_id):
+    jdb = JsonDb(db)
+    jdb['outbox'] = filter(lambda e:e['id']!=post_id,jdb.get('outbox',[]))
+
+def sync_nests(hard=False):
+    feed_url = '/'.join((global_account.get_profile()['link'],NEST_FEED_FILENAME))
+    cache = JsonDb(global_db,"cache")
+    feeds = JsonDb(global_db,"feed")
+    if hard:
+        for jdb in [feeds,cache]:
+            try: # Make sure we get everything fresh
+                del jdb[feed_url]
+            except KeyError:
+                pass
+    try:
+        nest = feed_fetch(feed_url,cache,feeds)
+    except:
+        nest = {'entries':[]}
+    guids = set().union(*[set([e['guid']]) for e in nest['entries']])
+    print guids
+    outbox = filter(lambda e:not e['guid'] in guids,get_outbox(global_db))
+    set_outbox(global_db,outbox)
+    return nest['entries'],outbox
+
+def publish_nest(db):
+    profile = global_account.get_profile()
+    nest_link = profile['link']
+    feed_url = nest_link and '/'.join((nest_link,NEST_FEED_FILENAME)) or ''
+    nest,outbox=sync_nests()
+    entries = outbox+nest
+    file('static/{0}/index.html'.format(NEST_OUTPUT_FOLDER),'w').write(
+        str(nest_render.nest({'entries':entries,'feed_url':feed_url})))
+    file('static/{0}/{1}'.format(NEST_OUTPUT_FOLDER,NEST_FEED_FILENAME),'w').write(
+        str(baseless_nest_render.rss(dict(profile,nest_link=nest_link,modified=datetime2str(now()),entries=entries))))
+    ###@@@ To be continued...
 
 ### Various db/clipboard access functions
 
@@ -390,8 +452,8 @@ global_account = Sam(global_db,LOGIN_TIMEOUT_SECONDS)
 
 ### form validators
 from urlparse import urlsplit
-def valid_url(url):
-    return urlsplit(url).scheme in ['http','https']
+def valid_url(url): return urlsplit(url).scheme in ['http','https']
+def valid_url_or_empty(url): return not url or valid_url(url)
 
 ### Template forms
 login_form = web.form.Form(
@@ -412,12 +474,25 @@ settings_form = web.form.Form(
     web.form.Password("newagain",description="New password again",tabindex=102),
     web.form.Textbox("title",web.form.notnull,description="Nest's name",size=23,tabindex=103),
     web.form.Textbox("description",description="Description/bio",size=80,tabindex=104),
-    web.form.Textbox("url",description="Nest's url",size=80,tabindex=104),
-    web.form.Button("Save",tabindex=105),
+    web.form.Textbox("link",web.form.Validator("Bad or missing url",valid_url),
+        description="Nest's url",size=80,tabindex=105),
+    web.form.Button("Save",tabindex=106),
     validators = [
         web.form.Validator("Passwords didn't match.", lambda i: i.newpass==i.newagain)
     ]
 )
+
+post_form = web.form.Form(
+    web.form.Hidden("csrf_token"),
+    web.form.Textbox("title",web.form.notnull,description="Title",size=80,tabindex=100,class_='focusme'),
+    web.form.Textbox("link",web.form.Validator("Invalid url",valid_url_or_empty),
+        description="Link",size=80,tabindex=101),
+    web.form.Textarea("description",description="Body",rows=5,cols=80,tabindex=102),
+    web.form.Button("Post",tabindex=103),
+)
+
+delpost_form = web.form.Form( web.form.Hidden("csrf_token"), web.form.Hidden("post_id"), web.form.Button("Delete"))
+publish_form = web.form.Form( web.form.Hidden("csrf_token"), web.form.Button("Publish"))
 
 feed_form = web.form.Form(
     web.form.Hidden('csrf_token'),
@@ -525,6 +600,8 @@ render_globals = {
     'flashes':pop_flashed_messages,
     'urlquote':urlquote,
     'login_form':login_form,
+    'delpost_form':delpost_form,
+    'publish_form':publish_form,
     'feed_form':feed_form,
     'logout_form':logout_form,
     'channel_form':channel_form,
@@ -541,6 +618,9 @@ render = web.template.render('templates',base='layout',globals=render_globals)
 # for partial render, xml, etc.
 baseless_render = web.template.render('templates',globals=render_globals)
 
+# Templates for the static nest
+nest_render = web.template.render(NEST_TEMPLATES,base='nest-layout',globals=render_globals)
+baseless_nest_render = web.template.render(NEST_TEMPLATES,globals=render_globals)
 
 ### FlockShare Import
 
@@ -759,6 +839,54 @@ class view_index:
         return render.index({
             'flock':root,'rendered':rendered,'clipboard':cb,'scrollto':scrollto})
 
+class view_nest:
+    def GET(self):
+        if not global_account.is_logged_in():
+            flash("You're not logged in. Can't view_nest.")
+            raise web.seeother('/')
+        form = post_form()
+        form.fill(csrf_token=csrf_token())
+        local_link = 'http://127.0.0.1:{0}/static/{1}'.format(HTTP_PORT,NEST_OUTPUT_FOLDER)
+        nest,outbox = sync_nests(hard=True)
+        return render.nest({'form':form,'nest':nest,'outbox':outbox,'local_link':local_link})
+    @csrf_protected
+    def POST(self):
+        if not global_account.is_logged_in():
+            flash("You're not logged in. Can't post.")
+            raise web.seeother('/')
+        form = post_form()
+        if form.validates():
+            entry = add_post(global_db,form.d.title,form.d.description,form.d.link)
+            flash('Posted to local outbox.')
+            raise web.seeother('/nest')
+        else:
+            form.inputs[0].set_value(csrf_token())
+            local_link = 'http://127.0.0.1:{0}/static/{1}'.format(HTTP_PORT,NEST_OUTPUT_FOLDER)
+            nest,outbox = sync_nests(hard=True)
+            return render.nest({'form':form,'nest':nest,'outbox':outbox,'local_link':local_link})
+
+class view_delpost:
+    def GET(self):
+        raise web.seeother('/nest')
+    @csrf_protected
+    def POST(self):
+        form = delpost_form()
+        if form.validates():
+            del_post(global_db,form.d.post_id)
+            flash('Post deleted.')
+        raise web.seeother('/nest')
+
+class view_publish:
+    def GET(self):
+        raise web.seeother('/nest')
+    @csrf_protected
+    def POST(self):
+        form = publish_form()
+        if form.validates():
+            publish_nest(global_db)
+            flash('Published to local nest. Refresh after you upload to the online site, and outbox should disappear.')
+        raise web.seeother('/nest')
+
 class view_editfeed:
     def GET(self):
         flash("Sorry. Stale browser page. Please try again whatever you were doing.")
@@ -973,8 +1101,14 @@ class view_settings:
             if global_account.is_new() or global_account.check_password(form.d.oldpass):
                 if form.d.newpass:
                     global_account._change_password(form.d.oldpass,form.d.newpass)
-                global_account._set_profile({'title':form.d.title,'description':form.d.description,'url':form.d.url})
-                flash("Your settings were saved.")
+                link = form.d.link
+                while link.endswith('/'): link = link[:-1]
+                global_account._set_profile({'title':form.d.title,'description':form.d.description,'link':link})
+                if global_account.is_new():
+                    flash("Settings saved, but you need to choose a password.")
+                    raise web.seeother('/settings')
+                else:
+                    flash("Your settings were saved.")
                 raise web.seeother('/')
             flash("Incorrect password. Try again.")
         form.inputs[0].value = csrf_token()
@@ -990,5 +1124,14 @@ class view_favicon:
     def GET(self):
         raise web.redirect('/static/favicon.ico')
 
+### Upgrades and patches
+def stealth_upgrade():
+    jdb = JsonDb(global_db)
+    if jdb.get('cache_version',0)<1:
+        global_db.query('drop table if exists jsondb_cache') # clear incompatible cache
+        jdb['cache_version'] = 1
+
+### Main
 if __name__=="__main__":
-   app.run()
+    stealth_upgrade()
+    app.run()

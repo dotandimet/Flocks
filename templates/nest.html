@@ -1,0 +1,58 @@
+$def with (args)
+$ profile = account.get_profile()
+$var title: Nest: $profile['title']
+$var description: $:urlize(profile['description'],nofollow=False)
+$var is_nest_page: True
+$var no_feed_form: True
+$ form = args['form']
+$if profile['link']:
+  [<a class="site-reference" href="$profile['link']">View online nest</a>]
+[<a class="site-reference" href="$args['local_link']">Preview local nest</a>]
+
+<form action="" method=POST>
+  $:form.render()
+</form>
+$if args['outbox']:
+  <h2>
+    Outbox
+    $if args['outbox']:
+      <form class=inline-form method=post action='$ctx.homepath/publish'>
+        $:publish_form({'csrf_token':csrf_token()}).render_css()
+      </form>
+  </h2>
+  $if not args['nest']:
+    <p><strong>Warning:</strong>
+      If this is a new nest, everything's fine, but if you have an <strong>existing</strong> nest,
+      there seems to be a problem connecting to it. Publishing now would delete all existing content in your
+      nest. Please check your internet connection and your
+      <a class="internal-link" href="$ctx.homepath/settings">settings</a>.</p>
+  <ul class="messages outbox">
+    $for entry in args['outbox']:
+       <li id='$entry["id"]' class=feed-entry>
+         <div class=toggler-label>
+           <div class=item-time>$entry['modified']</div>
+           <a class='entry-title noborder' href='$entry["link"]'>$entry['title']</a>
+           <form class=inline-form method=post action='$ctx.homepath/delpost'>
+             $:delpost_form({'csrf_token':csrf_token(),'post_id':entry['id']}).render_css()
+           </form>
+         </div>
+         <input type=checkbox class=toggler>
+         <div class=entry-description>$:urlize(entry['description'])</div>
+       </li>
+  </ul>
+<h2>Online nest</h2>
+$if args['nest']:
+  <ul class="messages">
+    $for entry in args['nest']:
+       <li id='$entry["id"]' class=feed-entry>
+         <div class=toggler-label>
+           <div class=item-time>$entry['modified']</div>
+           <a class='entry-title noborder' href='$entry["link"]'>$entry['title']</a>
+         </div>
+         <input type=checkbox class=toggler>
+         <div class=entry-description>$:urlize(entry['description'])</div>
+       </li>
+  </ul>
+$else:
+    <p>New nest, communication error, or wrong
+      <a class="internal-link" href="$ctx.homepath/settings">settings</a>.</p>

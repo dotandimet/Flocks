@@ -2,11 +2,9 @@
 
 _Flocks_ is [yet another attempt](http://r2.reallysimple.org/howto/radio2/) to go back from centralized [social networking services](https://secure.wikimedia.org/wikipedia/en/wiki/Social_networking_service) to decentralized [microblogging](https://secure.wikimedia.org/wikipedia/en/wiki/Microblogging).
 
-At the moment, the part for publishing (the _nest_), is not yet written, but the part that browses inputs from others (the _flock_) is already here. It's true that we don't have nests to watch yet, but since _Flocks_ is based on RSS/Atom, we can already watch anything out there that has a feed.
+You can already see a [nest](http://zzzen.com/thedod/) (the _Flocks_ equivalent of "blog" or "stream"). There are still a few things missing, but you can already start a nest with this, and it's also a feed reader :)
 
-This makes the current version look like yet-another-feed-aggregator, but the distinction between "_Flocks read-only_" and an aggregator (whether a web service or a desktop/phone app) is that if an aggregator is like a Tivo box (giving access to what was on TV _yesterday_), _Flocks_ is like the set top box that connects to it - its purpose is to let you figure out what's going on _now_.
-
-### Screenshots:
+### Screenshots (not latest version):
 
 Flock view:
 <a target="_blank" href="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-root.jpg"><img border="0" height="100" src="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-root.jpg" alt="Flock view"></a>

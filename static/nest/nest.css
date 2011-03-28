@@ -36,7 +36,7 @@ input[type="password"] {
 }
 select { font-size:10px }
 
-a.internal-link, button {
+a.anchor-link, a.internal-link, button {
     background: #105157;
     border: 1px solid #073B36;
     padding: 1px 2px;
@@ -222,7 +222,6 @@ div.page .clipboard ul.flock li { padding-top:4px }
 .node-title.mute { background:#AFAFAF; padding:1px 4px }
 
 div.page div.clipboard ul.flock { background:none }
-div.page ul.outbox { background:#ffff7f; border:solid black 1px }
 
 #clipboard { font-size:1.25em; font-weight:bold }
 
