@@ -3,3 +3,4 @@ sessions
 .*.swp
 *.pidaproject
 flocks.db
+scripts/my-uploader.sh

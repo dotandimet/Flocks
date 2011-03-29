@@ -20,6 +20,7 @@ DEFAULT_FLOCK_FILENAME = 'default_flock.js'
 NEST_TEMPLATES = 'default-nest-theme'
 NEST_OUTPUT_FOLDER = 'nest' # under static/ (so that we can preview it)
 NEST_FEED_FILENAME = 'rss.xml'
+NEST_UPLOAD_COMMAND = './scripts/upload.sh'
 ###
 
 import web
@@ -412,6 +413,7 @@ def sync_nests(hard=False):
     return nest['entries'],[dict(e,description=urlize(e['description'],nofollow=False))
         for e in outbox]
 
+import subprocess
 def publish_nest(db):
     profile = global_account.get_profile()
     nest_link = profile['link']
@@ -422,7 +424,7 @@ def publish_nest(db):
         str(nest_render.nest({'entries':entries,'feed_url':feed_url})))
     file('static/{0}/{1}'.format(NEST_OUTPUT_FOLDER,NEST_FEED_FILENAME),'w').write(
         str(baseless_nest_render.rss(dict(profile,nest_link=nest_link,modified=datetime2str(now()),entries=entries))))
-    ###@@@ To be continued...
+    subprocess.Popen(NEST_UPLOAD_COMMAND)
 
 ### Various db/clipboard access functions
 

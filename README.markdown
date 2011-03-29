@@ -10,6 +10,9 @@ Flock view:
 <a target="_blank" href="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-root.jpg"><img border="0" height="100" src="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-root.jpg" alt="Flock view"></a>
 Timeline view:
 <a target="_blank" href="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-timeline.jpg"><img border="0" height="100" src="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-timeline.jpg" alt="Timeline view"></a>
+Publishing to the [nest](http://zzzen.com/thedod/):
+<a target="_blank" href="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-publish.jpg"><img border="0" height="100" src="https://github.com/thedod/Flocks/raw/master/flocks-screenshot-publish.jpg" alt="Publishing to the nest"></a>
+
 
 ### Prerequisites:
 
