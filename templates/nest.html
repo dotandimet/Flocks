@@ -37,7 +37,7 @@ $if args['outbox']:
            </form>
          </div>
          <input type=checkbox class=toggler>
-         <div class=entry-description>$:urlize(entry['description'])</div>
+         <div class=entry-description>$:entry['description']</div>
        </li>
   </ul>
 <h2>Online nest</h2>
@@ -50,7 +50,7 @@ $if args['nest']:
            <a class='entry-title noborder' href='$entry["link"]'>$entry['title']</a>
          </div>
          <input type=checkbox class=toggler>
-         <div class=entry-description>$:urlize(entry['description'])</div>
+         <div class=entry-description>$:entry['description']</div>
        </li>
   </ul>
 $else:

@@ -19,7 +19,7 @@ $if args['entries']:
            <a class=anchor-link href='#$entry["id"]'>#</a>
          </div>
          <input type=checkbox class=toggler>
-         <div class=entry-description>$:urlize(entry['description'],nofollow=False)</div>
+         <div class=entry-description>$:entry['description']</div>
        </li>
   </ul>
 $else:

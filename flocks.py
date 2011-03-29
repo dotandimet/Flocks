@@ -374,7 +374,7 @@ def get_outbox(db):
     entries = JsonDb(db).get('outbox',[])
     profile = global_account.get_profile()
     feed_link = profile['link']
-    return [dict(e, link=e['link'] or '/#'.join((feed_link,e['id']))) for e in entries]
+    return [dict(e,link=e['link'] or '/#'.join((feed_link,e['id']))) for e in entries]
     
 def set_outbox(db,outbox): JsonDb(db)['outbox'] = outbox
 
@@ -409,7 +409,8 @@ def sync_nests(hard=False):
     print guids
     outbox = filter(lambda e:not e['guid'] in guids,get_outbox(global_db))
     set_outbox(global_db,outbox)
-    return nest['entries'],outbox
+    return nest['entries'],[dict(e,description=urlize(e['description'],nofollow=False))
+        for e in outbox]
 
 def publish_nest(db):
     profile = global_account.get_profile()
